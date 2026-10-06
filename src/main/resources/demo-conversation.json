@@ -1,0 +1,1232 @@
+{
+  "post": {
+    "id": "post_001",
+    "author": "alexchen",
+    "text": "AI agents aren’t just changing how we write code. They’re changing who gets to build.\n\nThe next era of software is going to look very different.",
+    "createdAt": "2026-10-06T10:00:00Z"
+  },
+  "replies": [
+    {
+      "id": "reply_001",
+      "author": {
+        "id": "acct_076",
+        "username": "quick_take",
+        "accountAgeDays": 2900,
+        "followers": 5100,
+        "following": 600,
+        "totalPosts": 21000
+      },
+      "text": "Hot take: the biggest change is that prototypes are now cheap enough to throw away.",
+      "createdAt": "2026-10-06T10:00:04Z"
+    },
+    {
+      "id": "reply_002",
+      "author": {
+        "id": "acct_001",
+        "username": "maya_codes",
+        "accountAgeDays": 2558,
+        "followers": 8475,
+        "following": 1445,
+        "totalPosts": 15542
+      },
+      "text": "The most useful change for me has been generating tests before I touch the implementation.",
+      "createdAt": "2026-10-06T10:00:31Z"
+    },
+    {
+      "id": "reply_003",
+      "author": {
+        "id": "acct_035",
+        "username": "future_stack_01",
+        "accountAgeDays": 63,
+        "followers": 52,
+        "following": 1005,
+        "totalPosts": 2709
+      },
+      "text": "The future is already here! AI agents are going to change everything. Adapt or get left behind.",
+      "createdAt": "2026-10-06T10:00:38Z"
+    },
+    {
+      "id": "reply_004",
+      "author": {
+        "id": "acct_036",
+        "username": "future_stack_02",
+        "accountAgeDays": 75,
+        "followers": 23,
+        "following": 1397,
+        "totalPosts": 6576
+      },
+      "text": "The future is here already. AI agents will change absolutely everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:00:41Z"
+    },
+    {
+      "id": "reply_005",
+      "author": {
+        "id": "acct_037",
+        "username": "future_stack_03",
+        "accountAgeDays": 84,
+        "followers": 16,
+        "following": 2676,
+        "totalPosts": 7606
+      },
+      "text": "The future is here already. AI agents are going to change everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:00:44Z"
+    },
+    {
+      "id": "reply_006",
+      "author": {
+        "id": "acct_038",
+        "username": "future_stack_04",
+        "accountAgeDays": 26,
+        "followers": 38,
+        "following": 2534,
+        "totalPosts": 2779
+      },
+      "text": "The future is already here. AI agents will change absolutely everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:00:47Z"
+    },
+    {
+      "id": "reply_007",
+      "author": {
+        "id": "acct_039",
+        "username": "future_stack_05",
+        "accountAgeDays": 87,
+        "followers": 56,
+        "following": 1097,
+        "totalPosts": 6201
+      },
+      "text": "The future is already here! AI agents will change everything. Adapt now or get left behind. Absolutely.",
+      "createdAt": "2026-10-06T10:00:50Z"
+    },
+    {
+      "id": "reply_008",
+      "author": {
+        "id": "acct_040",
+        "username": "future_stack_06",
+        "accountAgeDays": 20,
+        "followers": 11,
+        "following": 3070,
+        "totalPosts": 4291
+      },
+      "text": "The future is already here! AI agents will change everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:00:53Z"
+    },
+    {
+      "id": "reply_009",
+      "author": {
+        "id": "acct_041",
+        "username": "future_stack_07",
+        "accountAgeDays": 41,
+        "followers": 27,
+        "following": 2017,
+        "totalPosts": 5984
+      },
+      "text": "The future is already here! AI agents are going to change everything. Adapt now or get left behind.",
+      "createdAt": "2026-10-06T10:00:56Z"
+    },
+    {
+      "id": "reply_010",
+      "author": {
+        "id": "acct_042",
+        "username": "future_stack_08",
+        "accountAgeDays": 41,
+        "followers": 25,
+        "following": 1615,
+        "totalPosts": 4658
+      },
+      "text": "The future is here already. AI agents are going to change everything. Adapt now or get left behind. Absolutely.",
+      "createdAt": "2026-10-06T10:00:59Z"
+    },
+    {
+      "id": "reply_011",
+      "author": {
+        "id": "acct_002",
+        "username": "eli_dev",
+        "accountAgeDays": 1414,
+        "followers": 9208,
+        "following": 981,
+        "totalPosts": 7876
+      },
+      "text": "We tried agents on our monorepo. Great at small isolated tasks, less convincing at architecture.",
+      "createdAt": "2026-10-06T10:01:01Z"
+    },
+    {
+      "id": "reply_012",
+      "author": {
+        "id": "acct_043",
+        "username": "future_stack_09",
+        "accountAgeDays": 40,
+        "followers": 23,
+        "following": 3027,
+        "totalPosts": 6448
+      },
+      "text": "The future is here already. AI agents will change everything. Adapt or get left behind.",
+      "createdAt": "2026-10-06T10:01:02Z"
+    },
+    {
+      "id": "reply_013",
+      "author": {
+        "id": "acct_044",
+        "username": "future_stack_10",
+        "accountAgeDays": 45,
+        "followers": 17,
+        "following": 920,
+        "totalPosts": 3262
+      },
+      "text": "The future is here already. AI agents will change absolutely everything. Adapt or get left behind.",
+      "createdAt": "2026-10-06T10:01:05Z"
+    },
+    {
+      "id": "reply_014",
+      "author": {
+        "id": "acct_045",
+        "username": "future_stack_11",
+        "accountAgeDays": 103,
+        "followers": 14,
+        "following": 1011,
+        "totalPosts": 5383
+      },
+      "text": "The future is already here. AI agents are going to change everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:01:08Z"
+    },
+    {
+      "id": "reply_015",
+      "author": {
+        "id": "acct_046",
+        "username": "future_stack_12",
+        "accountAgeDays": 109,
+        "followers": 20,
+        "following": 3176,
+        "totalPosts": 8654
+      },
+      "text": "The future is already here! AI agents will change absolutely everything. Adapt now or be left behind.",
+      "createdAt": "2026-10-06T10:01:11Z"
+    },
+    {
+      "id": "reply_016",
+      "author": {
+        "id": "acct_003",
+        "username": "julesbuilds",
+        "accountAgeDays": 3492,
+        "followers": 8132,
+        "following": 1321,
+        "totalPosts": 11562
+      },
+      "text": "Does anyone have a good way to review the changes when a task touches forty files?",
+      "createdAt": "2026-10-06T10:01:53Z"
+    },
+    {
+      "id": "reply_017",
+      "author": {
+        "id": "acct_004",
+        "username": "sara_systems",
+        "accountAgeDays": 830,
+        "followers": 1904,
+        "following": 708,
+        "totalPosts": 4806
+      },
+      "text": "I still spend more time understanding the problem than writing the actual code.",
+      "createdAt": "2026-10-06T10:02:19Z"
+    },
+    {
+      "id": "reply_018",
+      "author": {
+        "id": "acct_067",
+        "username": "signal_notes_01",
+        "accountAgeDays": 100,
+        "followers": 65,
+        "following": 1167,
+        "totalPosts": 10423
+      },
+      "text": "Interesting perspective. I would like to see more real examples.",
+      "createdAt": "2026-10-06T10:02:42Z"
+    },
+    {
+      "id": "reply_019",
+      "author": {
+        "id": "acct_047",
+        "username": "nextwave_01",
+        "accountAgeDays": 1276,
+        "followers": 1248,
+        "following": 869,
+        "totalPosts": 1886
+      },
+      "text": "This is the biggest shift in software history. The next generation of builders is here.",
+      "createdAt": "2026-10-06T10:02:51Z"
+    },
+    {
+      "id": "reply_020",
+      "author": {
+        "id": "acct_048",
+        "username": "nextwave_02",
+        "accountAgeDays": 255,
+        "followers": 79,
+        "following": 1493,
+        "totalPosts": 2203
+      },
+      "text": "This is the biggest shift in software history. The next generation of builders has arrived.",
+      "createdAt": "2026-10-06T10:02:55Z"
+    },
+    {
+      "id": "reply_021",
+      "author": {
+        "id": "acct_049",
+        "username": "nextwave_03",
+        "accountAgeDays": 150,
+        "followers": 212,
+        "following": 979,
+        "totalPosts": 1670
+      },
+      "text": "Biggest shift in software history. The next generation of builders is here.",
+      "createdAt": "2026-10-06T10:03:00Z"
+    },
+    {
+      "id": "reply_022",
+      "author": {
+        "id": "acct_050",
+        "username": "nextwave_04",
+        "accountAgeDays": 983,
+        "followers": 411,
+        "following": 598,
+        "totalPosts": 3377
+      },
+      "text": "This is the biggest shift in software history. A new generation of builders is here.",
+      "createdAt": "2026-10-06T10:03:03Z"
+    },
+    {
+      "id": "reply_023",
+      "author": {
+        "id": "acct_005",
+        "username": "noahcraft",
+        "accountAgeDays": 3837,
+        "followers": 8122,
+        "following": 763,
+        "totalPosts": 6858
+      },
+      "text": "Our junior engineers are learning faster when they ask the tools to explain their reasoning.",
+      "createdAt": "2026-10-06T10:03:06Z"
+    },
+    {
+      "id": "reply_024",
+      "author": {
+        "id": "acct_051",
+        "username": "nextwave_05",
+        "accountAgeDays": 251,
+        "followers": 62,
+        "following": 628,
+        "totalPosts": 4172
+      },
+      "text": "This is the biggest shift in software history. The next generation of builders is here.",
+      "createdAt": "2026-10-06T10:03:09Z"
+    },
+    {
+      "id": "reply_025",
+      "author": {
+        "id": "acct_052",
+        "username": "nextwave_06",
+        "accountAgeDays": 251,
+        "followers": 242,
+        "following": 631,
+        "totalPosts": 1269
+      },
+      "text": "This is the biggest shift in software history. The next generation of builders has arrived.",
+      "createdAt": "2026-10-06T10:03:11Z"
+    },
+    {
+      "id": "reply_026",
+      "author": {
+        "id": "acct_053",
+        "username": "nextwave_07",
+        "accountAgeDays": 723,
+        "followers": 1419,
+        "following": 425,
+        "totalPosts": 1568
+      },
+      "text": "Biggest shift in software history. The next generation of builders is here.",
+      "createdAt": "2026-10-06T10:03:16Z"
+    },
+    {
+      "id": "reply_027",
+      "author": {
+        "id": "acct_054",
+        "username": "nextwave_08",
+        "accountAgeDays": 299,
+        "followers": 191,
+        "following": 1533,
+        "totalPosts": 1111
+      },
+      "text": "This is the biggest shift in software history. A new generation of builders is here.",
+      "createdAt": "2026-10-06T10:03:21Z"
+    },
+    {
+      "id": "reply_028",
+      "author": {
+        "id": "acct_006",
+        "username": "ren_design",
+        "accountAgeDays": 1960,
+        "followers": 6256,
+        "following": 1171,
+        "totalPosts": 9033
+      },
+      "text": "The missing piece is taste. Knowing what should exist is harder than producing it.",
+      "createdAt": "2026-10-06T10:03:44Z"
+    },
+    {
+      "id": "reply_029",
+      "author": {
+        "id": "acct_007",
+        "username": "pixelriver",
+        "accountAgeDays": 867,
+        "followers": 9223,
+        "following": 1221,
+        "totalPosts": 2018
+      },
+      "text": "I made a little garden simulator this weekend with an agent. Never shipped a game before.",
+      "createdAt": "2026-10-06T10:04:45Z"
+    },
+    {
+      "id": "reply_030",
+      "author": {
+        "id": "acct_008",
+        "username": "tess_runtime",
+        "accountAgeDays": 4090,
+        "followers": 5152,
+        "following": 170,
+        "totalPosts": 24521
+      },
+      "text": "What happens when two agents modify shared state at the same time? Honest question.",
+      "createdAt": "2026-10-06T10:05:33Z"
+    },
+    {
+      "id": "reply_031",
+      "author": {
+        "id": "acct_009",
+        "username": "adam_ports",
+        "accountAgeDays": 2388,
+        "followers": 7007,
+        "following": 305,
+        "totalPosts": 7240
+      },
+      "text": "The economics will change, but debugging distributed systems is still debugging distributed systems.",
+      "createdAt": "2026-10-06T10:06:16Z"
+    },
+    {
+      "id": "reply_032",
+      "author": {
+        "id": "acct_010",
+        "username": "olive_branch",
+        "accountAgeDays": 2541,
+        "followers": 1997,
+        "following": 991,
+        "totalPosts": 9508
+      },
+      "text": "For accessibility audits the tools already save us several hours each week.",
+      "createdAt": "2026-10-06T10:07:10Z"
+    },
+    {
+      "id": "reply_033",
+      "author": {
+        "id": "acct_068",
+        "username": "signal_notes_02",
+        "accountAgeDays": 1952,
+        "followers": 1979,
+        "following": 471,
+        "totalPosts": 10511
+      },
+      "text": "This could change a lot. Let us see how it develops.",
+      "createdAt": "2026-10-06T10:07:22Z"
+    },
+    {
+      "id": "reply_034",
+      "author": {
+        "id": "acct_011",
+        "username": "leo_console",
+        "accountAgeDays": 2958,
+        "followers": 8135,
+        "following": 935,
+        "totalPosts": 19080
+      },
+      "text": "A teammate caught a subtle race condition the model had confidently introduced yesterday.",
+      "createdAt": "2026-10-06T10:08:13Z"
+    },
+    {
+      "id": "reply_035",
+      "author": {
+        "id": "acct_055",
+        "username": "agent_daily_01",
+        "accountAgeDays": 65,
+        "followers": 18,
+        "following": 2416,
+        "totalPosts": 9790
+      },
+      "text": "Exactly this. Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:08:50Z"
+    },
+    {
+      "id": "reply_036",
+      "author": {
+        "id": "acct_012",
+        "username": "nina_notebook",
+        "accountAgeDays": 2220,
+        "followers": 9330,
+        "following": 1101,
+        "totalPosts": 8403
+      },
+      "text": "Curious whether the maintenance cost goes up after the first six months.",
+      "createdAt": "2026-10-06T10:08:51Z"
+    },
+    {
+      "id": "reply_037",
+      "author": {
+        "id": "acct_056",
+        "username": "agent_daily_02",
+        "accountAgeDays": 72,
+        "followers": 37,
+        "following": 2595,
+        "totalPosts": 8060
+      },
+      "text": "Exactly this. Everyone needs to pay attention right now.",
+      "createdAt": "2026-10-06T10:08:54Z"
+    },
+    {
+      "id": "reply_038",
+      "author": {
+        "id": "acct_057",
+        "username": "agent_daily_03",
+        "accountAgeDays": 80,
+        "followers": 6,
+        "following": 1776,
+        "totalPosts": 11695
+      },
+      "text": "Exactly this! Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:08:58Z"
+    },
+    {
+      "id": "reply_039",
+      "author": {
+        "id": "acct_058",
+        "username": "agent_daily_04",
+        "accountAgeDays": 40,
+        "followers": 24,
+        "following": 2053,
+        "totalPosts": 8612
+      },
+      "text": "Exactly this. Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:09:02Z"
+    },
+    {
+      "id": "reply_040",
+      "author": {
+        "id": "acct_059",
+        "username": "agent_daily_05",
+        "accountAgeDays": 50,
+        "followers": 40,
+        "following": 1314,
+        "totalPosts": 11911
+      },
+      "text": "Exactly this. Everyone needs to pay attention right now.",
+      "createdAt": "2026-10-06T10:09:06Z"
+    },
+    {
+      "id": "reply_041",
+      "author": {
+        "id": "acct_013",
+        "username": "byteandtea",
+        "accountAgeDays": 2857,
+        "followers": 3768,
+        "following": 384,
+        "totalPosts": 16569
+      },
+      "text": "I love the optimism here. Would like to see a reproducible benchmark on legacy systems.",
+      "createdAt": "2026-10-06T10:09:56Z"
+    },
+    {
+      "id": "reply_042",
+      "author": {
+        "id": "acct_060",
+        "username": "builders_club_01",
+        "accountAgeDays": 1452,
+        "followers": 714,
+        "following": 685,
+        "totalPosts": 3800
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Bring a laptop.",
+      "createdAt": "2026-10-06T10:10:12Z"
+    },
+    {
+      "id": "reply_043",
+      "author": {
+        "id": "acct_061",
+        "username": "builders_club_02",
+        "accountAgeDays": 2537,
+        "followers": 317,
+        "following": 584,
+        "totalPosts": 5636
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Beginners welcome!",
+      "createdAt": "2026-10-06T10:10:18Z"
+    },
+    {
+      "id": "reply_044",
+      "author": {
+        "id": "acct_062",
+        "username": "builders_club_03",
+        "accountAgeDays": 3001,
+        "followers": 1773,
+        "following": 536,
+        "totalPosts": 2860
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Join us.",
+      "createdAt": "2026-10-06T10:10:27Z"
+    },
+    {
+      "id": "reply_045",
+      "author": {
+        "id": "acct_063",
+        "username": "builders_club_04",
+        "accountAgeDays": 2199,
+        "followers": 712,
+        "following": 337,
+        "totalPosts": 5347
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Notes coming soon.",
+      "createdAt": "2026-10-06T10:10:31Z"
+    },
+    {
+      "id": "reply_046",
+      "author": {
+        "id": "acct_064",
+        "username": "builders_club_05",
+        "accountAgeDays": 3517,
+        "followers": 2472,
+        "following": 556,
+        "totalPosts": 2988
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Snacks provided.",
+      "createdAt": "2026-10-06T10:10:41Z"
+    },
+    {
+      "id": "reply_047",
+      "author": {
+        "id": "acct_065",
+        "username": "builders_club_06",
+        "accountAgeDays": 2234,
+        "followers": 295,
+        "following": 166,
+        "totalPosts": 3167
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. Bring a side project.",
+      "createdAt": "2026-10-06T10:10:47Z"
+    },
+    {
+      "id": "reply_048",
+      "author": {
+        "id": "acct_066",
+        "username": "builders_club_07",
+        "accountAgeDays": 3011,
+        "followers": 1280,
+        "following": 472,
+        "totalPosts": 2035
+      },
+      "text": "Community check-in: our Thursday study group is testing agent workflows together this weekend. See you there.",
+      "createdAt": "2026-10-06T10:10:56Z"
+    },
+    {
+      "id": "reply_049",
+      "author": {
+        "id": "acct_014",
+        "username": "kai_studio",
+        "accountAgeDays": 2643,
+        "followers": 1770,
+        "following": 1394,
+        "totalPosts": 8547
+      },
+      "text": "Small teams can explore so many more prototypes now. That part feels genuinely different.",
+      "createdAt": "2026-10-06T10:11:09Z"
+    },
+    {
+      "id": "reply_050",
+      "author": {
+        "id": "acct_069",
+        "username": "signal_notes_03",
+        "accountAgeDays": 120,
+        "followers": 182,
+        "following": 915,
+        "totalPosts": 13515
+      },
+      "text": "Looking forward to seeing where these tools go next.",
+      "createdAt": "2026-10-06T10:11:31Z"
+    },
+    {
+      "id": "reply_051",
+      "author": {
+        "id": "acct_015",
+        "username": "ava_query",
+        "accountAgeDays": 4122,
+        "followers": 3840,
+        "following": 369,
+        "totalPosts": 18697
+      },
+      "text": "SQL generation works surprisingly well when the schema documentation is decent.",
+      "createdAt": "2026-10-06T10:11:41Z"
+    },
+    {
+      "id": "reply_052",
+      "author": {
+        "id": "acct_016",
+        "username": "finn_loop",
+        "accountAgeDays": 2422,
+        "followers": 9029,
+        "following": 634,
+        "totalPosts": 9917
+      },
+      "text": "We need better interfaces for handing work back and forth between people and software.",
+      "createdAt": "2026-10-06T10:12:29Z"
+    },
+    {
+      "id": "reply_053",
+      "author": {
+        "id": "acct_017",
+        "username": "lena_reads",
+        "accountAgeDays": 1760,
+        "followers": 9070,
+        "following": 1444,
+        "totalPosts": 6534
+      },
+      "text": "There is a difference between a convincing demo and a reliable everyday workflow.",
+      "createdAt": "2026-10-06T10:13:28Z"
+    },
+    {
+      "id": "reply_054",
+      "author": {
+        "id": "acct_018",
+        "username": "sam_stack",
+        "accountAgeDays": 4122,
+        "followers": 6675,
+        "following": 1006,
+        "totalPosts": 7158
+      },
+      "text": "My side project finally has documentation. That alone has been worth the experiment.",
+      "createdAt": "2026-10-06T10:14:17Z"
+    },
+    {
+      "id": "reply_055",
+      "author": {
+        "id": "acct_019",
+        "username": "ivy_circuit",
+        "accountAgeDays": 537,
+        "followers": 632,
+        "following": 426,
+        "totalPosts": 2538
+      },
+      "text": "Would recommend trying this on a codebase you know well before trusting it on an unfamiliar one.",
+      "createdAt": "2026-10-06T10:15:23Z"
+    },
+    {
+      "id": "reply_056",
+      "author": {
+        "id": "acct_079",
+        "username": "kim_bridges",
+        "accountAgeDays": 2600,
+        "followers": 3100,
+        "following": 700,
+        "totalPosts": 7400
+      },
+      "text": "Honestly this might be the biggest shift in software history. The next generation of builders is here.",
+      "createdAt": "2026-10-06T10:16:00Z"
+    },
+    {
+      "id": "reply_057",
+      "author": {
+        "id": "acct_020",
+        "username": "theo_async",
+        "accountAgeDays": 2376,
+        "followers": 8657,
+        "following": 1122,
+        "totalPosts": 6594
+      },
+      "text": "Latency is still the biggest issue for interactive programming sessions.",
+      "createdAt": "2026-10-06T10:16:18Z"
+    },
+    {
+      "id": "reply_058",
+      "author": {
+        "id": "acct_003",
+        "username": "julesbuilds",
+        "accountAgeDays": 3492,
+        "followers": 8132,
+        "following": 1321,
+        "totalPosts": 11562
+      },
+      "text": "Thanks for the suggestions. Splitting the task into reviewable commits made it manageable.",
+      "createdAt": "2026-10-06T10:16:22Z"
+    },
+    {
+      "id": "reply_059",
+      "author": {
+        "id": "acct_021",
+        "username": "milo_draws",
+        "accountAgeDays": 3337,
+        "followers": 8045,
+        "following": 1075,
+        "totalPosts": 12595
+      },
+      "text": "As a designer I can finally test interactions without waiting for someone else to implement them.",
+      "createdAt": "2026-10-06T10:16:53Z"
+    },
+    {
+      "id": "reply_060",
+      "author": {
+        "id": "acct_070",
+        "username": "signal_notes_04",
+        "accountAgeDays": 1397,
+        "followers": 1263,
+        "following": 259,
+        "totalPosts": 13678
+      },
+      "text": "Interesting perspective. I would like to see more real examples.",
+      "createdAt": "2026-10-06T10:17:14Z"
+    },
+    {
+      "id": "reply_061",
+      "author": {
+        "id": "acct_008",
+        "username": "tess_runtime",
+        "accountAgeDays": 4090,
+        "followers": 5152,
+        "following": 170,
+        "totalPosts": 24521
+      },
+      "text": "Answering myself: locks around the shared files helped, but we still needed a human merge step.",
+      "createdAt": "2026-10-06T10:17:50Z"
+    },
+    {
+      "id": "reply_062",
+      "author": {
+        "id": "acct_022",
+        "username": "zoe_shell",
+        "accountAgeDays": 3809,
+        "followers": 7204,
+        "following": 1262,
+        "totalPosts": 18213
+      },
+      "text": "Anyone else find themselves writing more precise specifications now?",
+      "createdAt": "2026-10-06T10:17:59Z"
+    },
+    {
+      "id": "reply_063",
+      "author": {
+        "id": "acct_023",
+        "username": "owen_frame",
+        "accountAgeDays": 1688,
+        "followers": 5278,
+        "following": 1057,
+        "totalPosts": 10889
+      },
+      "text": "The conversation about responsibility is going to be as interesting as the technical progress.",
+      "createdAt": "2026-10-06T10:18:26Z"
+    },
+    {
+      "id": "reply_064",
+      "author": {
+        "id": "acct_024",
+        "username": "arturo_lab",
+        "accountAgeDays": 3323,
+        "followers": 8530,
+        "following": 650,
+        "totalPosts": 11262
+      },
+      "text": "Our build pipeline is the bottleneck. Faster code generation just makes the queue longer.",
+      "createdAt": "2026-10-06T10:18:56Z"
+    },
+    {
+      "id": "reply_065",
+      "author": {
+        "id": "acct_025",
+        "username": "clara_notes",
+        "accountAgeDays": 2243,
+        "followers": 7940,
+        "following": 251,
+        "totalPosts": 10498
+      },
+      "text": "Teaching students to question generated answers should be part of the curriculum.",
+      "createdAt": "2026-10-06T10:20:09Z"
+    },
+    {
+      "id": "reply_066",
+      "author": {
+        "id": "acct_055",
+        "username": "agent_daily_01",
+        "accountAgeDays": 65,
+        "followers": 18,
+        "following": 2416,
+        "totalPosts": 9790
+      },
+      "text": "Exactly this. Everyone needs to pay attention right now.",
+      "createdAt": "2026-10-06T10:21:00Z"
+    },
+    {
+      "id": "reply_067",
+      "author": {
+        "id": "acct_056",
+        "username": "agent_daily_02",
+        "accountAgeDays": 72,
+        "followers": 37,
+        "following": 2595,
+        "totalPosts": 8060
+      },
+      "text": "Exactly this! Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:21:04Z"
+    },
+    {
+      "id": "reply_068",
+      "author": {
+        "id": "acct_057",
+        "username": "agent_daily_03",
+        "accountAgeDays": 80,
+        "followers": 6,
+        "following": 1776,
+        "totalPosts": 11695
+      },
+      "text": "Exactly this. Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:21:08Z"
+    },
+    {
+      "id": "reply_069",
+      "author": {
+        "id": "acct_058",
+        "username": "agent_daily_04",
+        "accountAgeDays": 40,
+        "followers": 24,
+        "following": 2053,
+        "totalPosts": 8612
+      },
+      "text": "Exactly this. Everyone needs to pay attention right now.",
+      "createdAt": "2026-10-06T10:21:12Z"
+    },
+    {
+      "id": "reply_070",
+      "author": {
+        "id": "acct_059",
+        "username": "agent_daily_05",
+        "accountAgeDays": 50,
+        "followers": 40,
+        "following": 1314,
+        "totalPosts": 11911
+      },
+      "text": "Exactly this! Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:21:16Z"
+    },
+    {
+      "id": "reply_071",
+      "author": {
+        "id": "acct_026",
+        "username": "devon_labs",
+        "accountAgeDays": 2016,
+        "followers": 1673,
+        "following": 518,
+        "totalPosts": 10753
+      },
+      "text": "I want the boring migration work automated so I can focus on the difficult product questions.",
+      "createdAt": "2026-10-06T10:21:19Z"
+    },
+    {
+      "id": "reply_072",
+      "author": {
+        "id": "acct_071",
+        "username": "signal_notes_05",
+        "accountAgeDays": 135,
+        "followers": 97,
+        "following": 2326,
+        "totalPosts": 17885
+      },
+      "text": "This could change a lot. Let us see how it develops.",
+      "createdAt": "2026-10-06T10:21:42Z"
+    },
+    {
+      "id": "reply_073",
+      "author": {
+        "id": "acct_027",
+        "username": "bea_cloud",
+        "accountAgeDays": 2340,
+        "followers": 319,
+        "following": 308,
+        "totalPosts": 939
+      },
+      "text": "We evaluated three approaches last month. Context management mattered more than model choice.",
+      "createdAt": "2026-10-06T10:22:05Z"
+    },
+    {
+      "id": "reply_074",
+      "author": {
+        "id": "acct_028",
+        "username": "max_packet",
+        "accountAgeDays": 3925,
+        "followers": 1450,
+        "following": 1369,
+        "totalPosts": 22132
+      },
+      "text": "Network permissions for autonomous tools deserve a careful design review.",
+      "createdAt": "2026-10-06T10:22:59Z"
+    },
+    {
+      "id": "reply_075",
+      "author": {
+        "id": "acct_075",
+        "username": "new_here_dev",
+        "accountAgeDays": 12,
+        "followers": 9,
+        "following": 41,
+        "totalPosts": 30
+      },
+      "text": "First post here. I'm a nurse learning to code and these tools made the first month far less intimidating.",
+      "createdAt": "2026-10-06T10:23:30Z"
+    },
+    {
+      "id": "reply_076",
+      "author": {
+        "id": "acct_029",
+        "username": "sienna_io",
+        "accountAgeDays": 3043,
+        "followers": 821,
+        "following": 1239,
+        "totalPosts": 20424
+      },
+      "text": "The strongest results came when a person decomposed the work into small verifiable pieces.",
+      "createdAt": "2026-10-06T10:23:36Z"
+    },
+    {
+      "id": "reply_077",
+      "author": {
+        "id": "acct_006",
+        "username": "ren_design",
+        "accountAgeDays": 1960,
+        "followers": 6256,
+        "following": 1171,
+        "totalPosts": 9033
+      },
+      "text": "To be clear, I'm excited about it. Taste just becomes the scarce skill.",
+      "createdAt": "2026-10-06T10:24:15Z"
+    },
+    {
+      "id": "reply_078",
+      "author": {
+        "id": "acct_030",
+        "username": "haru_makes",
+        "accountAgeDays": 3102,
+        "followers": 5943,
+        "following": 436,
+        "totalPosts": 1345
+      },
+      "text": "Built a recipe organizer for my family. Watching them use it was the best part.",
+      "createdAt": "2026-10-06T10:24:35Z"
+    },
+    {
+      "id": "reply_079",
+      "author": {
+        "id": "acct_031",
+        "username": "lucas_merge",
+        "accountAgeDays": 2852,
+        "followers": 8150,
+        "following": 396,
+        "totalPosts": 11414
+      },
+      "text": "Pull requests are becoming the unit of conversation between developers and agents.",
+      "createdAt": "2026-10-06T10:25:33Z"
+    },
+    {
+      "id": "reply_080",
+      "author": {
+        "id": "acct_032",
+        "username": "drew_types",
+        "accountAgeDays": 1037,
+        "followers": 8359,
+        "following": 715,
+        "totalPosts": 992
+      },
+      "text": "Types help a lot here. The compiler provides feedback that natural language cannot.",
+      "createdAt": "2026-10-06T10:26:22Z"
+    },
+    {
+      "id": "reply_081",
+      "author": {
+        "id": "acct_072",
+        "username": "signal_notes_06",
+        "accountAgeDays": 1637,
+        "followers": 1918,
+        "following": 438,
+        "totalPosts": 11346
+      },
+      "text": "Looking forward to seeing where these tools go next.",
+      "createdAt": "2026-10-06T10:26:22Z"
+    },
+    {
+      "id": "reply_082",
+      "author": {
+        "id": "acct_077",
+        "username": "prolific_poster",
+        "accountAgeDays": 3300,
+        "followers": 12000,
+        "following": 800,
+        "totalPosts": 390000
+      },
+      "text": "Spent the morning comparing three agents on the same bug. Only one asked a clarifying question first.",
+      "createdAt": "2026-10-06T10:27:10Z"
+    },
+    {
+      "id": "reply_083",
+      "author": {
+        "id": "acct_033",
+        "username": "iris_field",
+        "accountAgeDays": 1054,
+        "followers": 5103,
+        "following": 1159,
+        "totalPosts": 3287
+      },
+      "text": "I wonder how open source maintainers will cope with the volume of generated contributions.",
+      "createdAt": "2026-10-06T10:27:20Z"
+    },
+    {
+      "id": "reply_084",
+      "author": {
+        "id": "acct_034",
+        "username": "robin_web",
+        "accountAgeDays": 2630,
+        "followers": 3312,
+        "following": 890,
+        "totalPosts": 1297
+      },
+      "text": "The tools struggle with ambiguous requirements in exactly the places our team struggles.",
+      "createdAt": "2026-10-06T10:28:26Z"
+    },
+    {
+      "id": "reply_085",
+      "author": {
+        "id": "acct_078",
+        "username": "echo_fan",
+        "accountAgeDays": 1900,
+        "followers": 640,
+        "following": 610,
+        "totalPosts": 5200
+      },
+      "text": "The future is already here. AI agents will change everything. Adapt or get left behind.",
+      "createdAt": "2026-10-06T10:30:50Z"
+    },
+    {
+      "id": "reply_086",
+      "author": {
+        "id": "acct_073",
+        "username": "signal_notes_07",
+        "accountAgeDays": 135,
+        "followers": 122,
+        "following": 1567,
+        "totalPosts": 11978
+      },
+      "text": "Interesting perspective. I would like to see more real examples.",
+      "createdAt": "2026-10-06T10:31:41Z"
+    },
+    {
+      "id": "reply_087",
+      "author": {
+        "id": "acct_055",
+        "username": "agent_daily_01",
+        "accountAgeDays": 65,
+        "followers": 18,
+        "following": 2416,
+        "totalPosts": 9790
+      },
+      "text": "Exactly this! Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:35:05Z"
+    },
+    {
+      "id": "reply_088",
+      "author": {
+        "id": "acct_056",
+        "username": "agent_daily_02",
+        "accountAgeDays": 72,
+        "followers": 37,
+        "following": 2595,
+        "totalPosts": 8060
+      },
+      "text": "Exactly this. Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:35:09Z"
+    },
+    {
+      "id": "reply_089",
+      "author": {
+        "id": "acct_057",
+        "username": "agent_daily_03",
+        "accountAgeDays": 80,
+        "followers": 6,
+        "following": 1776,
+        "totalPosts": 11695
+      },
+      "text": "Exactly this. Everyone needs to pay attention right now.",
+      "createdAt": "2026-10-06T10:35:13Z"
+    },
+    {
+      "id": "reply_090",
+      "author": {
+        "id": "acct_058",
+        "username": "agent_daily_04",
+        "accountAgeDays": 40,
+        "followers": 24,
+        "following": 2053,
+        "totalPosts": 8612
+      },
+      "text": "Exactly this! Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:35:17Z"
+    },
+    {
+      "id": "reply_091",
+      "author": {
+        "id": "acct_059",
+        "username": "agent_daily_05",
+        "accountAgeDays": 50,
+        "followers": 40,
+        "following": 1314,
+        "totalPosts": 11911
+      },
+      "text": "Exactly this. Everyone needs to pay attention.",
+      "createdAt": "2026-10-06T10:35:21Z"
+    },
+    {
+      "id": "reply_092",
+      "author": {
+        "id": "acct_074",
+        "username": "signal_notes_08",
+        "accountAgeDays": 2023,
+        "followers": 1961,
+        "following": 685,
+        "totalPosts": 18771
+      },
+      "text": "This could change a lot. Let us see how it develops.",
+      "createdAt": "2026-10-06T10:36:34Z"
+    },
+    {
+      "id": "reply_093",
+      "author": {
+        "id": "acct_080",
+        "username": "plain_agree",
+        "accountAgeDays": 1400,
+        "followers": 300,
+        "following": 280,
+        "totalPosts": 2100
+      },
+      "text": "Exactly this. Everyone needs to pay attention to the review step.",
+      "createdAt": "2026-10-06T10:37:20Z"
+    },
+    {
+      "id": "reply_094",
+      "author": {
+        "id": "acct_012",
+        "username": "nina_notebook",
+        "accountAgeDays": 2220,
+        "followers": 9330,
+        "following": 1101,
+        "totalPosts": 8403
+      },
+      "text": "@byteandtea agreed. A public benchmark on a ten year old codebase would settle a lot of arguments.",
+      "createdAt": "2026-10-06T10:38:40Z"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dead Internet Lens</title>
+<link rel="stylesheet" href="panel.css">
+<script defer src="panel.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="title"><i></i>Dead Internet <b>Lens</b></div>
+    <div class="bar-actions">
+      <button id="expand" title="Expand over the page">Expand</button>
+      <button id="close" title="Hide the overlay" aria-label="Close">×</button>
+    </div>
+  </header>
+  <section class="collect">
+    <div class="count">
+      <strong id="count">0</strong>
+      <span id="count-label">replies collected</span>
+      <small id="count-note">Open a single post to start.</small>
+    </div>
+    <div class="collect-actions">
+      <button id="auto" class="ghost" title="Scroll the thread and open hidden reply sections">Auto-collect</button>
+      <button id="analyze" class="primary">Analyze thread</button>
+    </div>
+  </section>
+  <div class="options">
+    <label><input type="checkbox" id="anon"> Anonymize handles in the graph</label>
+    <span id="server-state" class="server"></span>
+  </div>
+  <p class="message" id="message" hidden></p>
+  <main id="stage">
+    <div class="placeholder" id="placeholder">
+      <p><b>How it works</b></p>
+      <ol>
+        <li>Open a single post on X or LinkedIn and scroll through its replies or comments, or press <b>Auto-collect</b>.</li>
+        <li>Press <b>Analyze thread</b>. Replies are sent only to your local Lens server.</li>
+        <li>Watch the graph build. Each reply on the page gets a badge: click one to inspect that account, or click a node in the graph to jump to its reply.</li>
+      </ol>
+      <p class="fine">Classifications describe text, timing and graph signals in this thread. Account metadata isn't visible on the page, so it isn't used. Results are an experimental heuristic, never proof of who runs an account.</p>
+    </div>
+  </main>
+</body>
+</html>

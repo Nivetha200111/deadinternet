@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Dead Internet Lens",
+  "version": "0.1.0",
+  "description": "Overlay an experimental human-like / automation-like / coordination analysis on X and LinkedIn threads. Needs the local Lens server.",
+  "permissions": [],
+  "host_permissions": [
+    "http://localhost:8080/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Toggle Dead Internet Lens"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.linkedin.com/*"
+      ],
+      "js": [
+        "collector.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.html"
+      ],
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.linkedin.com/*"
+      ]
+    }
+  ]
+}

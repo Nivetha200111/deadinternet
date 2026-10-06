@@ -1,0 +1,6 @@
+target/
+.mvn/
+extension/
+scripts/
+src/main/java/
+src/test/

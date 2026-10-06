@@ -1,0 +1,4 @@
+target/
+.git/
+extension/test-harness/
+*.log

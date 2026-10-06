@@ -1,0 +1,32 @@
+# Render Blueprint: the Lens backend plus a private FalkorDB with a persistent disk.
+# Render dashboard -> New -> Blueprint -> pick this repository.
+services:
+  - type: web
+    name: dead-internet-lens
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: CAPTURE_ENABLED
+        value: "false"
+      - key: FALKOR_HOST
+        fromService:
+          type: pserv
+          name: lens-falkordb
+          property: host
+      - key: FALKOR_PORT
+        value: "6379"
+      - key: MAX_STORED_ANALYSES
+        value: "30"
+
+  - type: pserv
+    name: lens-falkordb
+    runtime: image
+    image:
+      url: docker.io/falkordb/falkordb:v4.14.11
+    plan: starter
+    disk:
+      name: falkordb-data
+      mountPath: /data
+      sizeGB: 1

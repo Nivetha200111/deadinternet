@@ -1,0 +1,19 @@
+# FalkorDB for Dead Internet Lens.
+# Host ports 6380/3001 avoid clashing with another Redis/FalkorDB already on 6379/3000.
+# Browser UI: http://localhost:3001
+services:
+  falkordb:
+    image: falkordb/falkordb:v4.14.11
+    ports:
+      - "127.0.0.1:6380:6379"
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - lens-graph:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  lens-graph:

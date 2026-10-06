@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0c0d" />
+    <meta
+      name="description"
+      content="Look beneath the conversation. An experimental network observatory for behavioral signals, automation and human connection."
+    />
+    <title>Dead Internet Lens — Beneath the conversation</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c0c0d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='%23f4f4f5' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23f4f4f5'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="/vendor/cytoscape.min.js"></script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <svg class="icons" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <symbol id="replay-icon" viewBox="0 0 24 24">
+          <path d="M3 10a9 9 0 1 1 1.7 7M3 4v6h6" />
+        </symbol>
+        <symbol id="upload-icon" viewBox="0 0 24 24">
+          <path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6" />
+        </symbol>
+        <symbol id="expand-icon" viewBox="0 0 24 24">
+          <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+        </symbol>
+        <symbol id="path-icon" viewBox="0 0 24 24">
+          <circle cx="5" cy="5" r="3" />
+          <circle cx="19" cy="19" r="3" />
+          <path d="M8 5h7a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h7" />
+        </symbol>
+        <symbol id="target-icon" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="7" />
+          <path d="M12 1v5m0 12v5M1 12h5m12 0h5" />
+        </symbol>
+        <symbol id="camera-icon" viewBox="0 0 24 24">
+          <path d="M3 7h4l2-3h6l2 3h4v14H3z" />
+          <circle cx="12" cy="13" r="4" />
+        </symbol>
+        <symbol id="arrow-icon" viewBox="0 0 24 24">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </symbol>
+        <symbol id="eye-icon" viewBox="0 0 24 24">
+          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+        </symbol>
+      </defs>
+    </svg>
+    <section
+      id="source-context"
+      class="source-context"
+      aria-label="Underlying conversation"
+      inert
+    ></section>
+    <button id="activate-lens" class="activate-lens" hidden>
+      <span class="mark"><i></i></span
+      ><span>Activate lens<small>SEE BENEATH THE CONVERSATION</small></span> ↗
+    </button>
+    <div class="lens-vignette" aria-hidden="true"></div>
+    <div class="app">
+      <header class="top">
+        <a href="/" class="brand"
+          ><span class="mark" aria-hidden="true"><i></i></span>
+          <div>
+            DEAD INTERNET <b>LENS</b><small>A SIGNAL EXPLORATION LAB</small>
+          </div>
+          <span class="version">V.01</span></a
+        ><span class="top-note"
+          ><i class="live-dot"></i>LENS ACTIVE
+          <span class="overlay-label">/ CONVERSATION OVERLAY</span></span
+        >
+        <div class="actions">
+          <button class="btn ghost" type="button" data-feed="https://x.com/home" title="Scroll and analyze your X home feed">X feed</button>
+          <button class="btn ghost" type="button" data-feed="https://www.linkedin.com/feed/" title="Scroll and analyze your LinkedIn feed">LinkedIn feed</button>
+          <form class="capture-bar" id="capture-form" autocomplete="off">
+            <input
+              id="capture-url"
+              type="url"
+              required
+              placeholder="Paste an X or LinkedIn post URL"
+              aria-label="X or LinkedIn post URL"
+            /><button class="btn" id="capture-submit" type="submit">
+              Analyze post
+            </button>
+          </form>
+          <button class="btn ghost" id="import-button">
+            <svg><use href="#upload-icon" /></svg
+            ><span>Import conversation</span></button
+          ><button
+            class="btn"
+            id="replay-button"
+            title="Replay the reveal (Space)"
+          >
+            <svg><use href="#replay-icon" /></svg>Replay analysis</button
+          ><button
+            class="dismiss-lens"
+            id="dismiss-lens"
+            aria-label="Close lens overlay"
+            title="Close lens overlay"
+          >
+            ×
+          </button>
+        </div>
+      </header>
+      <aside class="sidebar">
+        <div class="section-heading">
+          <span class="eyebrow">01 / THE CONVERSATION</span
+          ><span id="dataset-badge" class="micro-badge">DEMO</span>
+        </div>
+        <section class="source-post">
+          <div class="author">
+            <div class="avatar" id="post-avatar">ac</div>
+            <div>
+              <strong id="post-author">Original post</strong
+              ><small id="post-handle"></small>
+            </div>
+            <span class="source-mark">↗</span>
+          </div>
+          <p id="post-line">Loading conversation…</p>
+          <div class="post-meta">
+            <span id="post-date">—</span
+            ><span id="post-replies">— REPLIES</span>
+          </div>
+        </section>
+        <section class="score">
+          <div class="score-label">
+            DEAD INTERNET INDEX
+            <button
+              class="info"
+              id="method-button"
+              aria-label="How the score is calculated"
+            >
+              i
+            </button>
+          </div>
+          <div class="score-value">
+            <span id="score-value">–</span><small>%</small>
+            <div class="signal-bars" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+              ><i></i><i></i><i></i>
+            </div>
+          </div>
+          <p class="score-caption">A conversation with a second layer.</p>
+          <div class="distribution" aria-hidden="true">
+            <i id="distribution-human"></i><i id="distribution-uncertain"></i
+            ><i id="distribution-automation"></i>
+          </div>
+          <div class="tally" aria-label="Accounts by classification">
+            <button class="tally-item" data-filter="human_like">
+              <i class="swatch human"></i><span>Human-like</span
+              ><b id="count-human">–</b></button
+            ><button class="tally-item" data-filter="uncertain">
+              <i class="swatch uncertain"></i><span>Uncertain</span
+              ><b id="count-uncertain">–</b></button
+            ><button class="tally-item" data-filter="automation_like">
+              <i class="swatch automation"></i><span>Automation-like</span
+              ><b id="count-automation">–</b>
+            </button>
+          </div>
+          <p class="score-note">Experimental heuristic — not ground truth.</p>
+        </section>
+        <label class="sensitivity"
+          ><span class="sens-label"
+            >CLASSIFICATION SENSITIVITY <span id="sens-number">50</span></span
+          ><input
+            type="range"
+            id="sensitivity"
+            min="0"
+            max="100"
+            value="50"
+            aria-describedby="sens-readout"
+          /><span class="sens-ends"
+            ><span>Conservative</span><span>Aggressive</span></span
+          ><output id="sens-readout">automation-like ≥ 65%</output></label
+        >
+        <details class="progress" id="progress">
+          <summary class="progress-heading">
+            <span class="eyebrow">ANALYSIS LOG</span
+            ><button
+              id="rerun-button"
+              title="Run the pipeline again through FalkorDB"
+              aria-label="Re-run analysis"
+            >
+              <svg><use href="#replay-icon" /></svg>
+            </button>
+          </summary>
+          <div class="progress-title" id="progress-title">
+            Analyzing conversation
+          </div>
+          <ol>
+            <li data-step="discover">
+              <b data-count="accounts">0</b> accounts discovered
+            </li>
+            <li data-step="compare">
+              <b data-count="comparisons">0</b> text comparisons
+            </li>
+            <li data-step="similar">
+              <b data-count="similarityEdges">0</b> similarity edges
+            </li>
+            <li data-step="coordinate">
+              <b data-count="coordinationEdges">0</b> coordination edges
+            </li>
+            <li data-step="classify">
+              <b data-count="classified">0</b> accounts classified
+              <span class="source" id="progress-source"></span>
+            </li>
+            <li data-step="cluster">
+              <b data-count="clusters">0</b> behavioral clusters
+            </li>
+          </ol>
+        </details>
+        <div class="sidebar-note">
+          <span>◉</span>
+          <div>
+            Patterns, not verdicts.<small
+              >Signals suggest. They don’t prove.</small
+            >
+          </div>
+        </div>
+      </aside>
+      <main class="observatory">
+        <div class="map-heading">
+          <div>
+            <div class="eyebrow">
+              <span class="plus">+</span> NETWORK OBSERVATORY
+              <span class="edition">/ 001</span>
+            </div>
+            <h1>Beneath the conversation<span>.</span></h1>
+            <p>Every reply leaves a trace. Watch the patterns emerge.</p>
+          </div>
+          <div class="map-status">
+            <span
+              ><i class="live-dot"></i
+              ><span id="map-status">TRACING SIGNALS</span></span
+            ><small>POWERED BY FALKORDB</small>
+          </div>
+          <div class="overlay-summary">
+            <span>EXPERIMENTAL INDEX</span
+            ><strong><b id="overlay-score">—</b><small>%</small></strong
+            ><small id="overlay-counts">TRACING THE CONVERSATION</small>
+          </div>
+        </div>
+        <div class="map-toolbar">
+          <nav class="filters" aria-label="Filter accounts">
+            <button class="chip active" data-filter="all" aria-pressed="true">
+              All accounts <span id="total-accounts">—</span></button
+            ><button class="chip" data-filter="human_like" aria-pressed="false">
+              <i class="swatch human"></i>Human-like</button
+            ><button class="chip" data-filter="uncertain" aria-pressed="false">
+              <i class="swatch uncertain"></i>Uncertain</button
+            ><button
+              class="chip"
+              data-filter="automation_like"
+              aria-pressed="false"
+            >
+              <i class="swatch automation"></i>Automation-like</button
+            ><button
+              class="chip"
+              data-filter="coordinated"
+              aria-pressed="false"
+            >
+              <i class="swatch cluster"></i>Coordinated
+            </button>
+          </nav>
+          <button
+            id="anon-button"
+            class="icon-button"
+            aria-label="Anonymize account names"
+            title="Anonymize names · A"
+            aria-pressed="false"
+          >
+            <svg><use href="#eye-icon" /></svg>
+          </button>
+        </div>
+        <section
+          class="stage"
+          id="stage"
+          aria-label="Interactive conversation network"
+        >
+          <div class="capture-view" id="capture-view" hidden>
+            <div class="capture-screen">
+              <img id="capture-frame" alt="Live view of the post being read" />
+              <div class="capture-scan" aria-hidden="true"></div>
+            </div>
+            <div class="capture-hud" aria-live="polite">
+              <div class="capture-head">
+                <span class="live-dot"></span><span id="capture-site">LIVE</span>
+                <button class="capture-close" id="capture-close" aria-label="Close live view" hidden>×</button>
+              </div>
+              <div class="capture-count"><b id="capture-count">0</b> <span id="capture-noun">replies collected</span></div>
+              <p class="capture-message" id="capture-message">Opening the post…</p>
+              <div class="capture-actions">
+                <button class="btn" id="capture-signin" hidden>Sign in</button>
+                <button class="btn ghost" id="capture-continue" hidden>Continue</button>
+                <button class="btn ghost" id="capture-show">Show browser window</button>
+                <button class="btn ghost" id="capture-stop">Stop &amp; analyze</button>
+              </div>
+            </div>
+          </div>
+          <canvas id="underlay" aria-hidden="true"></canvas>
+          <div
+            id="cy"
+            role="img"
+            aria-label="Interactive graph: click an account or a cluster. Use Explore accounts for keyboard access."
+          ></div>
+          <canvas id="overlay" aria-hidden="true"></canvas>
+          <div id="cluster-labels"></div>
+          <div class="field-label">FIELD 001 <span>↗</span></div>
+          <div class="legend" id="legend">
+            <span><i class="line-key reply"></i>Reply</span
+            ><span><i class="line-key similar"></i>Similarity</span
+            ><span><i class="line-key coordinated"></i>Coordination</span>
+          </div>
+          <div class="axis" id="axis" aria-hidden="true">
+            <span>HUMAN-LIKE SIGNALS</span
+            ><span class="axis-mid">AUTOMATION LIKELIHOOD <i>⟶</i></span
+            ><span>AUTOMATION-LIKE SIGNALS</span>
+          </div>
+          <div class="graph-tools">
+            <button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button
+            ><button id="zoom-out" aria-label="Zoom out" title="Zoom out">
+              −</button
+            ><i></i
+            ><button
+              id="fit-button"
+              aria-label="Reset graph view"
+              title="Reset view"
+            >
+              <svg><use href="#target-icon" /></svg></button
+            ><button
+              id="focus-button"
+              aria-label="Toggle cinema mode"
+              title="Cinema mode · F"
+              aria-pressed="false"
+            >
+              <svg><use href="#expand-icon" /></svg></button
+            ><button
+              id="snapshot-button"
+              aria-label="Save graph image"
+              title="Save graph image"
+            >
+              <svg><use href="#camera-icon" /></svg>
+            </button>
+          </div>
+          <div class="graph-hint" id="graph-hint">
+            <i></i>Click a node to follow its signal <kbd>DRAG TO EXPLORE</kbd>
+          </div>
+          <div class="tip" id="tip" hidden></div>
+          <div class="banner" id="banner" hidden role="status"></div>
+          <aside class="inspector" id="inspector" hidden aria-label="Inspector">
+            <button
+              class="close"
+              id="inspector-close"
+              aria-label="Close inspector"
+            >
+              ×
+            </button>
+            <div id="inspector-body"></div>
+          </aside>
+        </section>
+        <div class="controls">
+          <button
+            id="play-button"
+            class="play-button"
+            aria-label="Pause reveal"
+          >
+            Ⅱ
+          </button>
+          <div class="timeline">
+            <div class="timeline-heading">
+              <span id="timeline-phase">DISCOVERING ACCOUNTS</span
+              ><span id="timeline-time">00.0 / 12.4s</span>
+            </div>
+            <input
+              type="range"
+              id="timeline-range"
+              aria-label="Reveal timeline"
+              min="0"
+              max="12400"
+              value="0"
+            />
+            <div class="timeline-labels">
+              <span>01 <b>Discover</b></span
+              ><span>02 <b>Compare</b></span
+              ><span>03 <b>Connect</b></span
+              ><span>04 <b>Reveal</b></span>
+            </div>
+          </div>
+          <button
+            class="path-button"
+            id="path-button"
+            title="Pick two accounts to trace a behavioral path"
+          >
+            <svg><use href="#path-icon" /></svg
+            ><span>Find a connection<small>FOLLOW THE EVIDENCE</small></span
+            ><svg><use href="#arrow-icon" /></svg>
+          </button>
+        </div>
+      </main>
+      <footer class="statusbar">
+        <span
+          ><i class="live-dot"></i
+          ><span id="source-status">CONNECTING TO THE OBSERVATORY</span></span
+        ><span id="network-stats">TEXT × TIME × TOPOLOGY</span
+        ><button id="explore-button">EXPLORE ACCOUNTS ↗</button>
+      </footer>
+    </div>
+    <dialog id="import-dialog">
+      <form method="dialog" class="dialog">
+        <header>
+          <h2>Analyze a conversation</h2>
+          <button class="close" value="cancel" aria-label="Close">×</button>
+        </header>
+        <p>
+          Paste conversation JSON: a <code>post</code> and up to 400
+          <code>replies</code>, each with an <code>author</code> account.
+          Accounts may reply more than once.
+        </p>
+        <textarea
+          id="import-json"
+          spellcheck="false"
+          placeholder='{"post": {...}, "replies": [...]}'
+        ></textarea>
+        <p class="hint" id="import-provider"></p>
+        <p class="error" id="import-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" id="import-sample">
+            Load bundled sample
+          </button>
+          <button type="button" class="btn" id="import-submit">Analyze</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="method-dialog">
+      <form method="dialog" class="dialog">
+        <header>
+          <h2>Reading the lens</h2>
+          <button class="close" value="cancel" aria-label="Close">×</button>
+        </header>
+        <p>
+          <b>Dead Internet Score</b> = 40% automation-like account share + 20%
+          coordinated account share + 25% near-duplicate reply share + 15% share
+          of accounts in clusters of five or more. It is uncalibrated and is not
+          the probability that a conversation is fake.
+        </p>
+        <p>
+          <b>Automation</b> and <b>coordination</b> are scored independently.
+          People can coordinate; automated accounts can act alone.
+        </p>
+        <p>
+          <b>Clusters</b> are connected components of the coordination graph,
+          computed in FalkorDB with <code>algo.WCC</code>. Coordination combines
+          text similarity (55%), timing proximity (30%) and shared phrases
+          (15%).
+        </p>
+        <p>
+          <b>Sensitivity</b> moves the classification thresholds over stored
+          scores. It does not re-run the classifier.
+        </p>
+        <p>
+          Classifications describe behavioral, textual, timing and graph signals
+          only. They are never proof of who, or what, is behind an account.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn" value="ok">Got it</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="explore-dialog">
+      <div class="dialog">
+        <header>
+          <div>
+            <div class="eyebrow">INDIVIDUAL SIGNALS</div>
+            <h2>Follow an account.</h2>
+          </div>
+          <button
+            class="close"
+            id="explore-close"
+            aria-label="Close account explorer"
+          >
+            ×
+          </button>
+        </header>
+        <label class="search-label" for="account-search">Search accounts</label
+        ><input
+          type="search"
+          id="account-search"
+          placeholder="Search a username…"
+        />
+        <div id="account-list" class="account-list"></div>
+      </div>
+    </dialog>
+  </body>
+</html>
