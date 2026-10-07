@@ -277,7 +277,7 @@
   }
   function passesFilter(a) {
     // Post types the extension's "Clean my feed" hides are dimmed here too.
-    if (state.hiddenGroups?.has(a.category)) return false;
+    if (state.hiddenGroups?.has(categoryOf(a))) return false;
     if (state.filter === "all") return true;
     if (state.filter === "coordinated")
       return Boolean(a.clusterId) || a.coordinatedAccounts > 0;

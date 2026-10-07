@@ -30,7 +30,11 @@
     ["content_farm", "Content farms", false],
     ["ai_written", "AI-written", false],
     ["automated", "Other automation", false],
+    ["too_little_text", "Too little text", true],
+    ["mixed", "Mixed signals", false],
   ];
+  // "Meaningful only" keeps personal posts and mixed signals worth a look; everything else folds.
+  const MEANINGFUL_HIDE = HIDEABLE.map(([k]) => k).filter((k) => k !== "mixed");
   const LABELS = Object.fromEntries(HIDEABLE.map(([k, label]) => [k, label]));
   // Remembered between sessions; private to this browser.
   const clean = (() => {
@@ -263,6 +267,10 @@
       : hidden
         ? `Hiding <b>${hidden}</b> of ${total} ${noun}<button type="button" id="show-all">Show all</button>`
         : `Nothing to hide here`;
+    $("#clean-meaningful").setAttribute(
+      "aria-pressed",
+      String(clean.on && MEANINGFUL_HIDE.every((k) => clean.hide.includes(k))),
+    );
     const showAll = $("#show-all");
     if (showAll) showAll.onclick = () => toPage({ type: "showAll" });
   }
@@ -278,6 +286,14 @@
     clean.chipsCollapsed = !clean.chipsCollapsed;
     saveClean();
     setChipsCollapsed(clean.chipsCollapsed);
+  };
+
+  $("#clean-meaningful").onclick = () => {
+    clean.hide = [...new Set([...clean.hide, ...MEANINGFUL_HIDE])];
+    clean.on = true;
+    saveClean();
+    renderClean();
+    sendHide();
   };
 
   $("#clean-on").onchange = () => {
