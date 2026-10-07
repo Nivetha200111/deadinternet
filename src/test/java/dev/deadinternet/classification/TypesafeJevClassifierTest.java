@@ -38,6 +38,8 @@ class TypesafeJevClassifierTest {
               "engagementBait":{"type":"noul","noul":0.64},
               "contentFarm":{"type":"noul","noul":0.2},
               "tooLittleText":{"type":"noul","noul":0.1},
+              "promotional":{"type":"noul","noul":0.1},
+              "informative":{"type":"noul","noul":0.2},
               "spamType":{"type":"choice","choice":"none","confidence":0.9,"probabilities":{"none":0.9,
                 "reply_phishing":0.01,"airdrop_scam":0.01,"investment_scam":0.01,"recovery_scam":0.01,"job_scam":0.01,
                 "adult_spam":0.01,"affiliate_spam":0.01,"engagement_bait":0.01,"follow_farming":0.01,
@@ -118,6 +120,20 @@ class TypesafeJevClassifierTest {
         assertThat(result.signalsForAutomation()).contains("JEV: text likely written by an AI model (80%)");
         assertThat(result.automationLikelihood()).isEqualTo(0.68);
         assertThat(result.classification()).isEqualTo(Classification.AUTOMATION_LIKE);
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"0.8,0.9,ai_ad", "0.1,0.8,ai_useful", "0.1,0.2,ai_low_value"})
+    void aiWrittenPostsSplitIntoAdsUsefulAndLowValue(double promotional, double informative, String category)
+            throws Exception {
+        var response = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(answers(0.1, 0.9, 0.8, 0.1));
+        var a = (com.fasterxml.jackson.databind.node.ObjectNode) response.path("answers");
+        ((com.fasterxml.jackson.databind.node.ObjectNode) a.path("promotional")).put("noul", promotional);
+        ((com.fasterxml.jackson.databind.node.ObjectNode) a.path("informative")).put("noul", informative);
+        var result = service(serve(200, mapper.writeValueAsString(response))).classify(sample());
+        assertThat(result.category()).isEqualTo(category);
+        assertThat(mapper.readTree(body.get()).path("questions").path("promotional").path("type").asText())
+                .isEqualTo("noul");
     }
 
     @Test

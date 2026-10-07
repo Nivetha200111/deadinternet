@@ -28,13 +28,16 @@
     ["follow_farming", "Follower farming", true],
     ["generic_comment", "Generic comments", true],
     ["content_farm", "Content farms", false],
+    ["ai_ad", "AI ads", true],
+    ["ai_low_value", "Low-value AI", true],
+    ["ai_useful", "Useful AI", false],
     ["ai_written", "AI-written", false],
     ["automated", "Other automation", false],
     ["too_little_text", "Too little text", true],
     ["mixed", "Mixed signals", false],
   ];
-  // "Meaningful only" keeps personal posts and mixed signals worth a look; everything else folds.
-  const MEANINGFUL_HIDE = HIDEABLE.map(([k]) => k).filter((k) => k !== "mixed");
+  // "Meaningful only" keeps personal posts, useful AI posts and mixed signals worth a look; everything else folds.
+  const MEANINGFUL_HIDE = HIDEABLE.map(([k]) => k).filter((k) => k !== "mixed" && k !== "ai_useful");
   const LABELS = Object.fromEntries(HIDEABLE.map(([k, label]) => [k, label]));
   // Remembered between sessions; private to this browser.
   const clean = (() => {

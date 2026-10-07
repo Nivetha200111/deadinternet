@@ -103,6 +103,12 @@ public final class TypesafeJevClassifier implements JevClassifier {
                 + "(\"X spent N years... condensed it into one free...\", \"only 3 words\", \"would you rather\", "
                 + "\"quote of the day\", \"reply with...\"), giveaways, get-rich or profit claims, follow-for-follow or "
                 + "mass promotion?"));
+        // Only decide the group when the text reads as AI-written: AI posts range from useful explainers to ads to filler.
+        questions.put("promotional", question("Is this advertising: selling or pitching a product, service, course, "
+                + "newsletter, tool or the author's own paid offer, including soft pitches and calls to book, buy or sign up?"));
+        questions.put("informative", question("Does this text give a reader something substantive and specific: an "
+                + "explanation, how-to, data, a concrete example or a real insight, rather than platitudes, generic "
+                + "motivation or recycled advice?"));
         questions.put("contentFarm", question("Does this look like a content-farm or aggregator account that mass-posts "
                 + "recycled facts, quotes, trivia, news or AI-generated content on a schedule rather than its own thoughts?"));
         // Spam is judged on content and behavior rather than on who is behind the account: humans spam too.
@@ -180,6 +186,8 @@ public final class TypesafeJevClassifier implements JevClassifier {
         double engagementBait = noul(answers, "engagementBait");
         double contentFarm = noul(answers, "contentFarm");
         double tooLittleText = noul(answers, "tooLittleText");
+        double promotional = noul(answers, "promotional");
+        double informative = noul(answers, "informative");
         var spamType = answers.path("spamType");
         if (!spamType.path("type").asText().equals("choice")) throw new JevException("Typesafe spamType must be a choice");
         String spamChoice = spamType.path("choice").asText();
@@ -221,7 +229,8 @@ public final class TypesafeJevClassifier implements JevClassifier {
         likelihood = Math.max(likelihood, Math.min(1, spam));
         likelihood = Math.round(likelihood * 1000) / 1000.0;
         String category = category(chosen.filter(t -> probability(spamProbabilities, t.id()) >= 0.5).orElse(null),
-                tooLittleText, engagementBait, contentFarm, aiGenerated, thresholds.classify(likelihood));
+                tooLittleText, engagementBait, contentFarm, aiGenerated, promotional, informative,
+                thresholds.classify(likelihood));
         return new JevClassification(thresholds.classify(likelihood), likelihood, coordination, confidence,
                 List.copyOf(signals), List.copyOf(counter),
                 sharedPattern >= 0.75 ? List.of("JEV identifies shared text and timing or graph patterns") : List.of(),
@@ -231,9 +240,12 @@ public final class TypesafeJevClassifier implements JevClassifier {
                 category);
     }
 
-    /** A named spam type wins; then too little text; then the strongest content signal; otherwise the label decides. */
+    /**
+     * A named spam type wins; then too little text; then the strongest content signal; otherwise the label decides.
+     * AI-written text splits three ways: advertising, useful (substantive) or low value.
+     */
     static String category(SpamType spam, double tooLittleText, double engagementBait, double contentFarm,
-                           double aiGenerated, Classification label) {
+                           double aiGenerated, double promotional, double informative, Classification label) {
         if (spam != null) {
             return switch (spam.id()) {
                 case "engagement_bait" -> PostCategory.ENGAGEMENT_BAIT;
@@ -247,7 +259,8 @@ public final class TypesafeJevClassifier implements JevClassifier {
         if (strongest >= CONTENT_SIGNAL) {
             if (strongest == engagementBait) return PostCategory.ENGAGEMENT_BAIT;
             if (strongest == contentFarm) return PostCategory.CONTENT_FARM;
-            return PostCategory.AI_WRITTEN;
+            if (promotional >= 0.5) return PostCategory.AI_AD;
+            return informative >= 0.5 ? PostCategory.AI_USEFUL : PostCategory.AI_LOW_VALUE;
         }
         return PostCategory.fromLabel(label);
     }

@@ -181,7 +181,15 @@
     },
     badgeAnchor: (el) => {
       const COMMENT = '[data-id^="urn:li:comment:"]';
-      if (el.matches(REDESIGNED_CARD)) return redesignedHeader(el).author?.parentElement ?? null;
+      if (el.matches(REDESIGNED_CARD)) {
+        // The redesign stacks the header's children in one grid cell, so a badge appended there lands on top of the
+        // name. Put it inline, right after the name text.
+        const author = redesignedHeader(el).author;
+        const name = author && [...author.querySelectorAll("span, p, div")].find(
+          (e) => e.childElementCount === 0 && e.textContent.trim(),
+        );
+        return name ? { after: name } : author ? { after: author } : null;
+      }
       if (!el.matches(COMMENT)) {
         return el.querySelector(".update-components-actor__meta, .update-components-actor__title, .update-components-actor__container");
       }
@@ -371,7 +379,8 @@
           onClick(info);
         });
       }
-      anchor.appendChild(badge);
+      if (anchor.after instanceof Element) anchor.after.after(badge);
+      else anchor.appendChild(badge);
       el.classList.add(`dil-tinted-${info.classification}`);
     }
   }
