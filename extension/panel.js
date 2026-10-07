@@ -18,7 +18,14 @@
     graph: null, // the last analysis, for the clean-feed counts
     analyzedCount: null, // posts collected when it ran, so the button can offer an update
     hiddenOnPage: 0,
+    visible: false, // whether the overlay is open on the page
+    busy: false, // an analysis is running
+    autoRequested: false, // the pending conversation was asked for automatically
+    autoTimer: null,
+    pendingGraph: null, // an analysis whose graph isn't shown yet
   };
+  // New posts wait this long for more to arrive, so scrolling sends one analysis instead of many.
+  const AUTO_DELAY_MS = 2500;
 
   // Post types the reader can fold away. Personal posts, mixed signals and too-little-text posts are never hidden:
   // they are either fine or can't be judged. Defaults hide only the clear-cut, high-confidence types.
@@ -41,11 +48,11 @@
   const LABELS = Object.fromEntries(HIDEABLE.map(([k, label]) => [k, label]));
   // Remembered between sessions; private to this browser.
   const clean = (() => {
-    const defaults = { on: true, hide: HIDEABLE.filter(([, , d]) => d).map(([k]) => k) };
+    const defaults = { on: true, auto: true, hide: HIDEABLE.filter(([, , d]) => d).map(([k]) => k) };
     try {
       const saved = JSON.parse(localStorage.getItem("dil-clean") || "null");
       return saved && Array.isArray(saved.hide)
-        ? { on: saved.on !== false, hide: saved.hide, chipsCollapsed: saved.chipsCollapsed === true, dockWidth: saved.dockWidth }
+        ? { on: saved.on !== false, auto: saved.auto !== false, hide: saved.hide, chipsCollapsed: saved.chipsCollapsed === true, dockWidth: saved.dockWidth }
         : defaults;
     } catch {
       return defaults;
@@ -143,15 +150,38 @@
     $("#auto").disabled = !c.mode;
     const fresh = state.analyzedCount != null ? c.count - state.analyzedCount : 0;
     $("#analyze").textContent =
-      fresh > 0 ? `Update (+${fresh} new)` : posts ? "Analyze posts" : "Analyze thread";
+      fresh > 0
+        ? `Update (+${fresh} new)`
+        : state.pendingGraph && state.appFrame
+          ? "Refresh graph"
+          : posts
+            ? "Analyze posts"
+            : "Analyze thread";
     $("#analyze").title =
       fresh > 0 ? `${fresh} more ${noun} loaded since the last analysis` : "";
-    $("#analyze").disabled = !c.hasPost || !c.count;
+    $("#analyze").disabled = state.busy || !c.hasPost || !c.count;
     $("#clean-title").textContent = posts ? "Clean my feed" : "Clean this thread";
   }
 
+  // Analyzes new posts on its own once they stop arriving. While the graph is open, it updates the badges and the
+  // fold on the page but leaves the graph as it is; "Refresh graph" shows the newer analysis.
+  function scheduleAuto() {
+    clearTimeout(state.autoTimer);
+    const c = state.collected;
+    if (!clean.auto || state.busy || !c?.hasPost || !c.count) return;
+    if (c.count - (state.analyzedCount ?? 0) <= 0) return;
+    state.autoTimer = setTimeout(() => {
+      state.autoRequested = true;
+      toPage({ type: "requestConversation" });
+    }, AUTO_DELAY_MS);
+  }
+
   async function analyze(conversation) {
-    showMessage("");
+    const auto = state.autoRequested;
+    state.autoRequested = false;
+    clearTimeout(state.autoTimer);
+    state.busy = true;
+    showMessage(auto ? "Analyzing new posts…" : "");
     $("#analyze").disabled = true;
     try {
       const status = await api("/api/analyses", {
@@ -160,7 +190,10 @@
         body: JSON.stringify(conversation),
       });
       state.analysisId = status.id;
-      mountGraph(status.id);
+      // Keep a graph someone may be exploring; mount right away otherwise.
+      const keepGraph = auto && state.visible && state.appFrame;
+      if (state.visible && !keepGraph) mountGraph(status.id);
+      else state.pendingGraph = status.id;
       let current = status;
       while (current.status === "RUNNING") {
         await new Promise((r) => setTimeout(r, 400));
@@ -171,15 +204,20 @@
       const graph = await api(`/api/analyses/${status.id}/graph`);
       state.analyzedCount = conversation.replies.length;
       sendResults(graph);
-      if (state.collected) renderCollected(state.collected);
+      if (auto) showMessage("");
     } catch (e) {
       showMessage(e.message, true);
+      // Don't retry the same failure on every scroll; a manual Analyze tries again.
+      if (auto) state.analyzedCount = conversation.replies.length;
     } finally {
-      $("#analyze").disabled = false;
+      state.busy = false;
+      if (state.collected) renderCollected(state.collected);
+      scheduleAuto();
     }
   }
 
   function mountGraph(id) {
+    state.pendingGraph = null;
     $("#placeholder").hidden = true;
     document.body.classList.add("has-graph");
     state.appFrame?.remove();
@@ -309,7 +347,14 @@
   window.addEventListener("message", (event) => {
     const msg = event.data || {};
     if (event.source === window.parent) {
-      if (msg.type === "collected") renderCollected(msg);
+      if (msg.type === "collected") {
+        renderCollected(msg);
+        scheduleAuto();
+      }
+      if (msg.type === "visible") {
+        state.visible = Boolean(msg.value);
+        if (state.visible && state.pendingGraph && !state.appFrame) mountGraph(state.pendingGraph);
+      }
       if (msg.type === "conversation") analyze(msg.conversation);
       if (msg.type === "error") showMessage(msg.message, true);
       if (msg.type === "notOnPage")
@@ -332,6 +377,8 @@
         state.appFrame = null;
         state.graph = null;
         state.analyzedCount = null;
+        state.pendingGraph = null;
+        clearTimeout(state.autoTimer);
         renderClean();
         $("#placeholder").hidden = false;
         document.body.classList.remove("has-graph");
@@ -350,7 +397,20 @@
     }
   });
 
-  $("#analyze").onclick = () => toPage({ type: "requestConversation" });
+  $("#analyze").onclick = () => {
+    const c = state.collected;
+    const fresh = c ? c.count - (state.analyzedCount ?? 0) : 0;
+    if (fresh <= 0 && state.pendingGraph) {
+      mountGraph(state.pendingGraph);
+      renderCollected(c);
+    } else toPage({ type: "requestConversation" });
+  };
+  $("#auto-analyze").checked = clean.auto;
+  $("#auto-analyze").onchange = () => {
+    clean.auto = $("#auto-analyze").checked;
+    saveClean();
+    scheduleAuto();
+  };
   $("#auto").onclick = () =>
     toPage({ type: "autoCollect", value: !state.collected?.collecting });
   $("#close").onclick = () => toPage({ type: "close" });

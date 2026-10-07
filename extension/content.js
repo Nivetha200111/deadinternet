@@ -223,20 +223,26 @@
     launcher.querySelector("span").textContent = `Lens · ${n} ${word}`;
   }
 
+  // The panel loads hidden with the page, so it can analyze posts as they appear before anyone opens it.
+  function createPanel() {
+    if (state.panel) return;
+    state.panel = document.createElement("div");
+    state.panel.className = "dil-panel dil-expanded";
+    state.panel.hidden = true;
+    state.frame = document.createElement("iframe");
+    state.frame.src = PANEL_URL;
+    state.frame.title = "Dead Internet Lens overlay";
+    state.panel.appendChild(state.frame);
+    state.panel.appendChild(dockHandle());
+    document.body.appendChild(state.panel);
+  }
+
   function openPanel() {
-    if (!state.panel) {
-      state.panel = document.createElement("div");
-      state.panel.className = "dil-panel dil-expanded";
-      state.frame = document.createElement("iframe");
-      state.frame.src = PANEL_URL;
-      state.frame.title = "Dead Internet Lens overlay";
-      state.panel.appendChild(state.frame);
-      state.panel.appendChild(dockHandle());
-      document.body.appendChild(state.panel);
-    }
+    createPanel();
     state.panel.hidden = false;
     updateLauncher();
     sendCollected();
+    toPanel({ type: "visible", value: true });
   }
 
   /** Drag the docked overlay's left edge to make it wider or narrower; the panel remembers the width. */
@@ -273,6 +279,7 @@
 
   function closePanel() {
     if (state.panel) state.panel.hidden = true;
+    toPanel({ type: "visible", value: false });
     updateLauncher();
     launcher.focus();
   }
@@ -308,6 +315,7 @@
       case "ready":
         state.panelReady = true;
         if (msg.dockWidth) setDockWidth(msg.dockWidth);
+        toPanel({ type: "visible", value: !state.panel.hidden });
         sendCollected();
         break;
       case "requestConversation":
@@ -366,4 +374,5 @@
   });
 
   collect();
+  createPanel();
 })();

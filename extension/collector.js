@@ -182,13 +182,14 @@
     badgeAnchor: (el) => {
       const COMMENT = '[data-id^="urn:li:comment:"]';
       if (el.matches(REDESIGNED_CARD)) {
-        // The redesign stacks the header's children in one grid cell, so a badge appended there lands on top of the
-        // name. Put it inline, right after the name text.
+        // The redesign lays the header out in stacked grid cells, so a badge inserted anywhere inside it lands on top
+        // of the name. Float it over the card instead, measured to sit just right of the name text.
         const author = redesignedHeader(el).author;
+        // Skip screen-reader copies of the name: they're clipped to a pixel.
         const name = author && [...author.querySelectorAll("span, p, div")].find(
-          (e) => e.childElementCount === 0 && e.textContent.trim(),
+          (e) => e.childElementCount === 0 && e.textContent.trim() && e.getBoundingClientRect().width > 2,
         );
-        return name ? { after: name } : author ? { after: author } : null;
+        return name || author ? { overlay: name || author } : null;
       }
       if (!el.matches(COMMENT)) {
         return el.querySelector(".update-components-actor__meta, .update-components-actor__title, .update-components-actor__container");
@@ -355,8 +356,62 @@
    * Adds a badge to every tagged reply that has a result. results: Map of reply id -> { classification,
    * automation, coordination, cluster, username }. onClick(info) runs when a badge is clicked.
    */
+  /**
+   * Places a floating badge at the end of its target's line (after "• 3rd+ • Follow" and the like), inside the card.
+   * When that line is full, it tries the header's next lines (headline, date), then the card's top-right corner,
+   * clear of the menu and close buttons.
+   */
+  function placeOverlay(badge, card, target) {
+    const range = document.createRange();
+    const rectOf = (el) => {
+      // Text is measured by its glyphs: a stretched grid or flex item is wider than what it shows.
+      if (!el.textContent.trim()) return el.getBoundingClientRect();
+      range.selectNodeContents(el);
+      return range.getBoundingClientRect();
+    };
+    const name = rectOf(target);
+    const box = card.getBoundingClientRect();
+    if (!name.width || !box.width) return;
+    const body = card.querySelector('[data-testid="expandable-text-box"]')?.getBoundingClientRect();
+    const leaves = [...card.querySelectorAll("span, p, div, a, button, svg, img")]
+      // Screen-reader copies are clipped to a pixel but their text still measures full size.
+      .filter((e) => !e.closest(".dil-badge") && !e.childElementCount && e.getBoundingClientRect().width > 2)
+      .map(rectOf)
+      .filter((r) => r.width && r.width < box.width / 2 && r.left >= name.left - 1);
+    const width = badge.offsetWidth;
+    const height = badge.offsetHeight;
+    // Lines from the name down to the post text.
+    const mids = [name.top + name.height / 2];
+    for (const r of leaves.sort((a, b) => a.top - b.top)) {
+      const mid = r.top + r.height / 2;
+      if (r.top > name.bottom - 1 && (!body || mid < body.top) && mid - mids[mids.length - 1] > height * 0.8)
+        mids.push(mid);
+    }
+    for (const [i, mid] of mids.entries()) {
+      const start = i === 0 ? name.right : name.left;
+      const right = leaves.reduce((m, r) => (r.top <= mid && r.bottom >= mid ? Math.max(m, r.right) : m), start);
+      const left = right - box.left + 8;
+      if (left + width <= box.width - 88) {
+        badge.style.left = `${Math.round(left)}px`;
+        badge.style.top = `${Math.round(mid - box.top - height / 2)}px`;
+        return;
+      }
+    }
+    badge.style.left = `${Math.round(Math.max(0, box.width - width - 88))}px`;
+    badge.style.top = "8px";
+  }
+
+  function placeOverlays(site) {
+    for (const badge of document.querySelectorAll(".dil-badge-overlay")) {
+      const card = badge.closest("[data-dil-item]");
+      const target = card && site.badgeAnchor(card)?.overlay;
+      if (target) placeOverlay(badge, card, target);
+    }
+  }
+
   function decorate(results, onClick, site = detect()) {
     if (!results.size || !site) return;
+    placeOverlays(site);
     for (const el of document.querySelectorAll("[data-dil-item]")) {
       const info = results.get(el.dataset.dilItem);
       if (!info || [...el.querySelectorAll(".dil-badge")].some((b) => b.closest("[data-dil-item]") === el)) continue;
@@ -379,8 +434,12 @@
           onClick(info);
         });
       }
-      if (anchor.after instanceof Element) anchor.after.after(badge);
-      else anchor.appendChild(badge);
+      if (anchor.overlay) {
+        badge.classList.add("dil-badge-overlay");
+        el.classList.add("dil-badge-host");
+        el.appendChild(badge);
+        placeOverlay(badge, el, anchor.overlay);
+      } else anchor.appendChild(badge);
       el.classList.add(`dil-tinted-${info.classification}`);
     }
   }
@@ -435,6 +494,16 @@
     setTimeout(() => el.classList.remove("dil-flash"), 1800);
     return true;
   }
+
+  // Floating badges follow their names when the page reflows (window resize, docking the panel).
+  let reflow = null;
+  window.addEventListener("resize", () => {
+    cancelAnimationFrame(reflow);
+    reflow = requestAnimationFrame(() => {
+      const site = detect();
+      if (site) placeOverlays(site);
+    });
+  });
 
   window.DeadInternetLensCollector = { detect, scan, scanFeed, scanPosts, scrollDown, clickMore, decorate, clearBadges, applyHiding, clearHiding, scrollToReplies, ADAPTERS };
 })();

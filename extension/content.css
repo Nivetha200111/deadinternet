@@ -109,6 +109,15 @@
   cursor: pointer;
   vertical-align: middle;
 }
+.dil-badge-host {
+  position: relative !important;
+}
+.dil-badge.dil-badge-overlay {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  background: rgba(9, 6, 13, 0.85);
+}
 .dil-badge b {
   font-weight: 600;
 }

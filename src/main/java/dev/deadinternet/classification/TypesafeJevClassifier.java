@@ -68,6 +68,15 @@ public final class TypesafeJevClassifier implements JevClassifier {
     private final ObjectMapper mapper;
     private final ClassificationThresholds thresholds;
     private final String model;
+    /** The extension re-analyzes a feed as it grows, so the same account's posts come back; ask JEV about them once. */
+    private static final int CACHE_SIZE = 2000;
+    private final Map<String, JevClassification> cache = java.util.Collections.synchronizedMap(
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, JevClassification> eldest) {
+                    return size() > CACHE_SIZE;
+                }
+            });
 
     TypesafeJevClassifier(HttpJevClassifier transport, ObjectMapper mapper,
                           ClassificationThresholds thresholds, String model) {
@@ -160,7 +169,22 @@ public final class TypesafeJevClassifier implements JevClassifier {
 
     @Override
     public JevClassification classify(JevClassificationRequest request) {
-        String response = transport.post(Map.of("model", model, "state", state(request), "questions", questions()));
+        var payload = Map.of("model", model, "state", state(request), "questions", questions());
+        String key;
+        try {
+            key = mapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            throw new JevException("Could not serialize the JEV request", e);
+        }
+        var cached = cache.get(key);
+        if (cached != null) return cached;
+        var result = ask(payload, request);
+        cache.put(key, result);
+        return result;
+    }
+
+    private JevClassification ask(Map<String, Object> payload, JevClassificationRequest request) {
+        String response = transport.post(payload);
         JsonNode root;
         try {
             root = mapper.readTree(response);

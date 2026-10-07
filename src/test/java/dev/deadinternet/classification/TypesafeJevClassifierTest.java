@@ -23,6 +23,7 @@ class TypesafeJevClassifierTest {
     private final ClassificationThresholds thresholds = new ClassificationThresholds(0.40, 0.65);
     private final AtomicReference<String> body = new AtomicReference<>();
     private final AtomicReference<String> auth = new AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
     private HttpServer server;
 
     private static final String VALID = """
@@ -55,6 +56,7 @@ class TypesafeJevClassifierTest {
     private URI serve(int status, String response) throws Exception {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/systemone", exchange -> {
+            calls.incrementAndGet();
             body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             auth.set(exchange.getRequestHeaders().getFirst("Authorization"));
             byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
@@ -120,6 +122,15 @@ class TypesafeJevClassifierTest {
         assertThat(result.signalsForAutomation()).contains("JEV: text likely written by an AI model (80%)");
         assertThat(result.automationLikelihood()).isEqualTo(0.68);
         assertThat(result.classification()).isEqualTo(Classification.AUTOMATION_LIKE);
+    }
+
+    @Test
+    void asksJevOnceForTheSameAccountAndPosts() throws Exception {
+        var service = service(serve(200, VALID));
+        var first = service.classify(sample());
+        var second = service.classify(sample());
+        assertThat(calls.get()).isEqualTo(1);
+        assertThat(second).isEqualTo(first);
     }
 
     @ParameterizedTest
