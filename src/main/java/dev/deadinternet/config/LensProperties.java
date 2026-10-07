@@ -18,9 +18,9 @@ public record LensProperties(Similarity similarity, Coordination coordination, T
     public record Thresholds(double human, double automation) {}
 
     /**
-     * provider: auto (HTTP when url is set, otherwise the local heuristic), http, or heuristic.
+     * provider: auto (Typesafe for its API host, otherwise HTTP when url is set), typesafe, http, or heuristic.
      */
-    public record Jev(String provider, String url, String token, int timeoutSeconds, int parallelism) {}
+    public record Jev(String provider, String url, String token, int timeoutSeconds, int parallelism, String model) {}
 
     /** password is optional; managed FalkorDB instances require one. */
     public record Falkor(String host, int port, String username, String password) {}

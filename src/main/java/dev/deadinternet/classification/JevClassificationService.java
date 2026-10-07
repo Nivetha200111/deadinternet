@@ -44,8 +44,8 @@ public class JevClassificationService {
         String provider = jev.provider() == null ? "auto" : jev.provider().toLowerCase(Locale.ROOT);
         boolean hasUrl = jev.url() != null && !jev.url().isBlank();
         boolean useHttp = switch (provider) {
-            case "http" -> {
-                if (!hasUrl) throw new IllegalStateException("lens.jev.provider=http requires JEV_URL");
+            case "http", "typesafe" -> {
+                if (!hasUrl) throw new IllegalStateException("lens.jev.provider=" + provider + " requires JEV_URL");
                 yield true;
             }
             case "heuristic" -> false;
@@ -53,8 +53,13 @@ public class JevClassificationService {
             default -> throw new IllegalStateException("Unknown lens.jev.provider: " + provider);
         };
         if (useHttp) {
-            this.primary = new HttpJevClassifier(URI.create(jev.url()), jev.token(),
+            var endpoint = URI.create(jev.url());
+            var transport = new HttpJevClassifier(endpoint, jev.token(),
                     Duration.ofSeconds(jev.timeoutSeconds()), mapper, parser);
+            boolean typesafe = provider.equals("typesafe") || (provider.equals("auto")
+                    && "api.typesafe.ai".equalsIgnoreCase(endpoint.getHost()));
+            this.primary = typesafe
+                    ? new TypesafeJevClassifier(transport, mapper, thresholds, jev.model()) : transport;
             this.primarySource = ClassificationSource.JEV;
         } else {
             this.primary = heuristic;

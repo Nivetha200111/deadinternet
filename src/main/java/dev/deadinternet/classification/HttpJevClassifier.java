@@ -31,6 +31,11 @@ public class HttpJevClassifier implements JevClassifier {
 
     @Override
     public JevClassification classify(JevClassificationRequest request) {
+        return parser.parse(post(request));
+    }
+
+    /** Shared authenticated transport; response bodies are never included in errors. */
+    String post(Object request) {
         String body;
         try {
             body = mapper.writeValueAsString(request);
@@ -52,6 +57,6 @@ public class HttpJevClassifier implements JevClassifier {
             throw new JevException("JEV request interrupted", e);
         }
         if (response.statusCode() / 100 != 2) throw new JevException("JEV returned HTTP " + response.statusCode());
-        return parser.parse(response.body());
+        return response.body();
     }
 }

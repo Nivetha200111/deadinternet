@@ -22,7 +22,7 @@ public final class Fixtures {
                 new LensProperties.Similarity(0.72, 6),
                 new LensProperties.Coordination(0.75, 0.55, 0.30, 0.15, 120, 3),
                 new LensProperties.Thresholds(0.40, 0.65),
-                new LensProperties.Jev("heuristic", "", "", 2, 4),
+                new LensProperties.Jev("heuristic", "", "", 2, 4, "jev-latest"),
                 new LensProperties.Falkor("localhost", 6380, "", ""),
                 new LensProperties.Capture(true, "target/test-browser-profile", "chrome", true, 400, 6, false, "chrome"),
                 30);
