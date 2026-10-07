@@ -303,7 +303,8 @@
 
   /**
    * Scrolls the feed or thread down by most of a screen. LinkedIn's redesign scrolls an inner container (main#workspace)
-   * rather than the window, so this scrolls whichever ancestor of the posts actually scrolls.
+   * rather than the window, so when the page itself can't scroll this scrolls the largest element that can. The scroll
+   * is instant: smooth scrolls get cancelled by the sites' own lazy loading and re-layout, and then never advance.
    */
   function scrollDown() {
     const root = document.scrollingElement || document.documentElement;
@@ -311,15 +312,16 @@
       el.scrollHeight > el.clientHeight + 50 && /(auto|scroll)/.test(getComputedStyle(el).overflowY);
     let target = null;
     if (root.scrollHeight <= root.clientHeight + 50) {
-      for (let el = document.querySelector("[data-dil-item]") || document.querySelector("main"); el && el !== root; el = el.parentElement) {
-        if (scrollable(el)) {
-          target = el;
-          break;
-        }
+      const start = document.querySelector("[data-dil-item]") || document.querySelector('[data-testid="mainFeed"], main');
+      for (let el = start; el && el !== root && !target; el = el.parentElement) if (scrollable(el)) target = el;
+      if (!target) {
+        target = [...document.querySelectorAll("main, section, div")]
+          .filter(scrollable)
+          .sort((a, b) => b.scrollHeight - a.scrollHeight)[0] ?? null;
       }
     }
-    const top = (target ? target.clientHeight : innerHeight) * 0.85;
-    (target || window).scrollBy({ top, behavior: "smooth" });
+    if (target) target.scrollTop += target.clientHeight * 0.85;
+    else window.scrollBy(0, innerHeight * 0.85);
   }
 
   /** Opens "show more replies" / "load more comments" sections; returns how many it clicked. */
@@ -374,6 +376,47 @@
     }
   }
 
+  /**
+   * Folds every analyzed post whose post type is in {@code hidden} into a one-line note, and unfolds the rest. A
+   * folded post keeps its place, so the feed doesn't jump; clicking the note shows it again (onReveal(id)).
+   * results: Map of item id -> { category, categoryLabel, ... }.
+   */
+  function applyHiding(results, hidden, revealed, onReveal) {
+    for (const el of document.querySelectorAll("[data-dil-item]")) {
+      const id = el.dataset.dilItem;
+      const info = results.get(id);
+      const hide = Boolean(info && info.category && hidden.has(info.category) && !revealed.has(id));
+      const stub = [...el.children].find((c) => c.classList.contains("dil-stub"));
+      if (hide && !stub) {
+        const note = document.createElement("div");
+        note.className = "dil-stub";
+        note.setAttribute("role", "button");
+        note.tabIndex = 0;
+        note.title = "Hidden by Dead Internet Lens. Click to show this post.";
+        note.innerHTML = '<i></i><span>Hidden by Lens · <b></b></span><em>Show</em>';
+        note.querySelector("b").textContent = info.categoryLabel || info.category;
+        const reveal = (e) => {
+          // The post itself links elsewhere (X opens the tweet); only reveal.
+          e.preventDefault();
+          e.stopPropagation();
+          onReveal(id);
+        };
+        note.addEventListener("click", reveal);
+        note.addEventListener("keydown", (e) => (e.key === "Enter" || e.key === " ") && reveal(e));
+        el.prepend(note);
+        el.classList.add("dil-collapsed");
+      } else if (!hide && stub) {
+        stub.remove();
+        el.classList.remove("dil-collapsed");
+      }
+    }
+  }
+
+  function clearHiding() {
+    document.querySelectorAll(".dil-stub").forEach((s) => s.remove());
+    document.querySelectorAll(".dil-collapsed").forEach((el) => el.classList.remove("dil-collapsed"));
+  }
+
   /** Scrolls to and flashes the first of these replies that is on the page; false if none is. */
   function scrollToReplies(replyIds) {
     const el = replyIds.map((id) => document.querySelector(`[data-dil-item="${CSS.escape(id)}"]`)).find(Boolean);
@@ -384,5 +427,5 @@
     return true;
   }
 
-  window.DeadInternetLensCollector = { detect, scan, scanFeed, scanPosts, scrollDown, clickMore, decorate, clearBadges, scrollToReplies, ADAPTERS };
+  window.DeadInternetLensCollector = { detect, scan, scanFeed, scanPosts, scrollDown, clickMore, decorate, clearBadges, applyHiding, clearHiding, scrollToReplies, ADAPTERS };
 })();

@@ -88,7 +88,7 @@ public class JevClassificationService {
             return new ClassificationResult(thresholds.classify(result.automationLikelihood()),
                     result.automationLikelihood(), result.coordinationLikelihood(), result.confidence(),
                     result.signalsForAutomation(), result.signalsAgainstAutomation(), result.coordinationSignals(),
-                    result.summary(), primarySource);
+                    result.summary(), primarySource, result.category());
         } catch (RuntimeException e) {
             log.warn("JEV classification failed for {}: {}", request.account().id(), e.getMessage());
             return fallback(request, e.getMessage());

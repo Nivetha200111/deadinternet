@@ -9,12 +9,48 @@
       ? override
       : "http://localhost:8080";
   const $ = (s) => document.querySelector(s);
+  const $$ = (s) => [...document.querySelectorAll(s)];
   const state = {
     collected: null,
     analysisId: null,
     expanded: true,
     appFrame: null,
+    graph: null, // the last analysis, for the clean-feed counts
+    analyzedCount: null, // posts collected when it ran, so the button can offer an update
+    hiddenOnPage: 0,
   };
+
+  // Post types the reader can fold away. Personal posts, mixed signals and too-little-text posts are never hidden:
+  // they are either fine or can't be judged. Defaults hide only the clear-cut, high-confidence types.
+  const HIDEABLE = [
+    ["scam", "Scams", true],
+    ["engagement_bait", "Engagement bait", true],
+    ["follow_farming", "Follower farming", true],
+    ["generic_comment", "Generic comments", true],
+    ["content_farm", "Content farms", false],
+    ["ai_written", "AI-written", false],
+    ["automated", "Other automation", false],
+  ];
+  const LABELS = Object.fromEntries(HIDEABLE.map(([k, label]) => [k, label]));
+  // Remembered between sessions; private to this browser.
+  const clean = (() => {
+    const defaults = { on: true, hide: HIDEABLE.filter(([, , d]) => d).map(([k]) => k) };
+    try {
+      const saved = JSON.parse(localStorage.getItem("dil-clean") || "null");
+      return saved && Array.isArray(saved.hide)
+        ? { on: saved.on !== false, hide: saved.hide, chipsCollapsed: saved.chipsCollapsed === true, dockWidth: saved.dockWidth }
+        : defaults;
+    } catch {
+      return defaults;
+    }
+  })();
+  function saveClean() {
+    try {
+      localStorage.setItem("dil-clean", JSON.stringify(clean));
+    } catch {
+      /* storage unavailable: choices last for this session */
+    }
+  }
 
   // Only ever post to the X page that framed this panel.
   const PAGE_ORIGIN = location.ancestorOrigins?.[0];
@@ -98,8 +134,13 @@
       : "Scroll the thread and open hidden reply sections";
     $("#auto").classList.toggle("active", c.collecting);
     $("#auto").disabled = !c.mode;
-    $("#analyze").textContent = posts ? "Analyze posts" : "Analyze thread";
+    const fresh = state.analyzedCount != null ? c.count - state.analyzedCount : 0;
+    $("#analyze").textContent =
+      fresh > 0 ? `Update (+${fresh} new)` : posts ? "Analyze posts" : "Analyze thread";
+    $("#analyze").title =
+      fresh > 0 ? `${fresh} more ${noun} loaded since the last analysis` : "";
     $("#analyze").disabled = !c.hasPost || !c.count;
+    $("#clean-title").textContent = posts ? "Clean my feed" : "Clean this thread";
   }
 
   async function analyze(conversation) {
@@ -121,7 +162,9 @@
       if (current.status !== "COMPLETE")
         throw new Error(current.error || "Analysis failed");
       const graph = await api(`/api/analyses/${status.id}/graph`);
+      state.analyzedCount = conversation.replies.length;
       sendResults(graph);
+      if (state.collected) renderCollected(state.collected);
     } catch (e) {
       showMessage(e.message, true);
     } finally {
@@ -136,6 +179,7 @@
     const frame = document.createElement("iframe");
     frame.src = `${SERVER}/?analysis=${encodeURIComponent(id)}&embed=1${$("#anon").checked ? "&anon=1" : ""}`;
     frame.title = "Dead Internet Lens graph";
+    frame.addEventListener("load", sendHide);
     $("#stage").appendChild(frame);
     state.appFrame = frame;
   }
@@ -160,9 +204,14 @@
         automation: a.automationLikelihood,
         coordination: a.coordinationLikelihood,
         cluster: a.clusterId ? clusterIndex.get(a.clusterId) : null,
+        category: a.category,
+        categoryLabel: LABELS[a.category] || null,
       })),
     );
     toPage({ type: "results", items });
+    state.graph = graph;
+    renderClean();
+    sendHide();
     const counts = { human_like: 0, uncertain: 0, automation_like: 0 };
     graph.accounts.forEach((a) => counts[label(a)]++);
     showMessage(
@@ -171,6 +220,72 @@
         "Experimental heuristic, not ground truth.",
     );
   }
+
+  // ---------------------------------------------------------------- clean my feed
+  const hiding = () => (clean.on ? clean.hide : []);
+
+  function sendHide() {
+    toPage({ type: "hide", categories: hiding() });
+    state.appFrame?.contentWindow?.postMessage({ type: "lens:hide", categories: hiding() }, SERVER);
+  }
+
+  function renderClean() {
+    const g = state.graph;
+    $("#clean").hidden = !g;
+    if (!g) return;
+    const posts = new Map();
+    let total = 0;
+    for (const a of g.accounts) {
+      total += a.replies.length;
+      if (a.category) posts.set(a.category, (posts.get(a.category) || 0) + a.replies.length);
+    }
+    $("#clean-on").checked = clean.on;
+    $("#clean").classList.toggle("off", !clean.on);
+    $("#clean-chips").innerHTML = HIDEABLE.map(
+      ([k, label]) =>
+        `<button type="button" data-cat="${k}" aria-pressed="${clean.hide.includes(k)}" title="${clean.hide.includes(k) ? "Hidden. Click to show these posts." : "Shown. Click to hide these posts."}">${label}<b>${posts.get(k) || 0}</b></button>`,
+    ).join("");
+    $$("#clean-chips [data-cat]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          const k = b.dataset.cat;
+          clean.hide = clean.hide.includes(k) ? clean.hide.filter((x) => x !== k) : [...clean.hide, k];
+          clean.on = true;
+          saveClean();
+          renderClean();
+          sendHide();
+        }),
+    );
+    const hidden = clean.on ? clean.hide.reduce((sum, k) => sum + (posts.get(k) || 0), 0) : 0;
+    const noun = state.collected?.mode === "posts" ? "posts" : "replies";
+    $("#clean-summary").innerHTML = !clean.on
+      ? `Showing everything`
+      : hidden
+        ? `Hiding <b>${hidden}</b> of ${total} ${noun}<button type="button" id="show-all">Show all</button>`
+        : `Nothing to hide here`;
+    const showAll = $("#show-all");
+    if (showAll) showAll.onclick = () => toPage({ type: "showAll" });
+  }
+
+  // The chips can fold away to give the graph more room; remembered like the other choices.
+  function setChipsCollapsed(collapsed) {
+    $("#clean").classList.toggle("chips-collapsed", collapsed);
+    $("#clean-toggle").setAttribute("aria-expanded", String(!collapsed));
+    $("#clean-toggle").title = collapsed ? "Show the post-type chips" : "Hide the post-type chips";
+  }
+  setChipsCollapsed(clean.chipsCollapsed === true);
+  $("#clean-toggle").onclick = () => {
+    clean.chipsCollapsed = !clean.chipsCollapsed;
+    saveClean();
+    setChipsCollapsed(clean.chipsCollapsed);
+  };
+
+  $("#clean-on").onchange = () => {
+    clean.on = $("#clean-on").checked;
+    saveClean();
+    renderClean();
+    sendHide();
+  };
 
   window.addEventListener("message", (event) => {
     const msg = event.data || {};
@@ -187,9 +302,18 @@
           { type: "lens:inspect", username: msg.username },
           SERVER,
         );
+      if (msg.type === "hiddenCount") state.hiddenOnPage = msg.count;
+      // The page can't keep the docked width itself (that would write to the site's storage); the panel does.
+      if (msg.type === "dockWidth") {
+        clean.dockWidth = msg.width;
+        saveClean();
+      }
       if (msg.type === "reset") {
         state.appFrame?.remove();
         state.appFrame = null;
+        state.graph = null;
+        state.analyzedCount = null;
+        renderClean();
         $("#placeholder").hidden = false;
         document.body.classList.remove("has-graph");
         showMessage("");
@@ -228,5 +352,5 @@
   });
   checkServer();
   setInterval(checkServer, 15000);
-  toPage({ type: "ready" });
+  toPage({ type: "ready", dockWidth: clean.dockWidth ?? null });
 })();

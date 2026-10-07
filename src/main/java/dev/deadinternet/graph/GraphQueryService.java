@@ -261,6 +261,7 @@ public class GraphQueryService {
                 strings(a.get("signalsAgainstAutomation")), strings(a.get("coordinationSignals")),
                 (String) a.get("summary"), num(a, "degree").intValue(), (String) a.get("clusterId"),
                 num(a, "coordinatedAccounts").intValue(),
+                a.get("category") instanceof String c && !c.isBlank() ? c : null,
                 replies.stream().filter(x -> x.get("id") != null).map(x -> new AccountNode.ReplyView(
                         (String) x.get("id"), (String) x.get("text"), num(x, "secondsAfterParent").longValue(),
                         Boolean.TRUE.equals(x.get("duplicate")))).toList());

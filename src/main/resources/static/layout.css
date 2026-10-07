@@ -1,0 +1,162 @@
+/*
+ * Resizable layout. Every block around the map can be dragged to the size you want (app.js "layout" section):
+ * heading and story strip vertically, sidebar and inspector horizontally. Click a handle to collapse or expand its
+ * block, double-click to reset it. The map always takes the space that's left.
+ */
+
+/* ---------------------------------------------------------------- handles */
+.splitter {
+  position: relative;
+  z-index: 9;
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+}
+.splitter::after {
+  content: "";
+  position: absolute;
+  border-radius: 99px;
+  background: var(--line-strong);
+  opacity: 0.55;
+  transition: opacity 0.15s, background 0.15s;
+}
+.splitter:hover::after,
+.splitter.dragging::after,
+.splitter:focus-visible::after {
+  background: var(--accent);
+  opacity: 1;
+}
+.splitter:focus-visible {
+  outline: none;
+}
+.splitter-y {
+  height: 12px;
+  margin: -6px 0;
+  cursor: row-resize;
+}
+.splitter-y::after {
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 3px;
+  transform: translate(-50%, -50%);
+}
+.splitter-x {
+  width: 12px;
+  cursor: col-resize;
+}
+.splitter-x::after {
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+/* A collapsed block leaves a labelled handle, so it's obvious how to get it back. */
+.splitter-y.collapsed {
+  height: 20px;
+  margin: 0;
+}
+.splitter-y.collapsed::before {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(calc(-50% - 52px), -50%);
+  font: 8px var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.splitter-y.collapsed:hover::before {
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- resizable blocks */
+.map-heading.sized,
+.story.sized {
+  overflow: hidden;
+  min-height: 0;
+}
+/* Collapsed means collapsed, whatever padding a view (such as the extension overlay) gives the block. */
+.map-heading.block-collapsed,
+.story.block-collapsed {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-top-width: 0 !important;
+  min-height: 0 !important;
+}
+
+/* The sidebar width follows its handle (wide screens only; narrow screens and the overlay hide the sidebar). */
+@media (min-width: 901px) {
+  body:not(.embed) .app {
+    grid-template-columns: var(--sidebar-w, 254px) minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .splitter-sidebar {
+    display: none;
+  }
+}
+.splitter-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: end;
+  margin-right: -6px;
+}
+body.embed .splitter-sidebar,
+.app.no-sidebar .splitter-sidebar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- inspector: a drawer for the whole map area */
+/* It used to live inside the map, so a short map squeezed it into the zoom tools. */
+.observatory > .inspector {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: auto;
+  width: var(--inspector-w, 360px);
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  z-index: 20;
+}
+/* The drawer itself doesn't scroll (that would carry its edge handle away); its body does. */
+.observatory > .inspector:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.observatory > .inspector #inspector-body {
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+.inspector .splitter-x {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+}
+/* The zoom tools and legend step aside while the drawer is open. */
+.observatory.inspecting .graph-tools {
+  right: calc(var(--inspector-w, 360px) + 30px);
+}
+.observatory.inspecting .legend {
+  opacity: 0;
+}
+.legend {
+  max-width: 46%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  text-align: right;
+  line-height: 1.6;
+}
+
+/* Decorative text never sits behind data. */
+.scene-watermark,
+.spatial .scene-watermark {
+  display: none;
+}

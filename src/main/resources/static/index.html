@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0c0c0d" />
+    <meta name="theme-color" content="#08060d" />
     <meta
       name="description"
       content="Look beneath the conversation. An experimental network observatory for behavioral signals, automation and human connection."
@@ -11,10 +11,13 @@
     <title>Dead Internet Lens — Beneath the conversation</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c0c0d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='%23f4f4f5' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23f4f4f5'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2308060d'/%3E%3Ccircle cx='32' cy='32' r='19' fill='none' stroke='%23c084fc' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23c084fc'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/observatory.css" />
+    <link rel="stylesheet" href="/theme.css" />
+    <link rel="stylesheet" href="/layout.css" />
     <script defer src="/vendor/cytoscape.min.js"></script>
     <script defer src="/app.js"></script>
   </head>
@@ -231,8 +234,8 @@
               <span class="plus">+</span> NETWORK OBSERVATORY
               <span class="edition">/ 001</span>
             </div>
-            <h1>Beneath the conversation<span>.</span></h1>
-            <p>Every reply leaves a trace. Watch the patterns emerge.</p>
+            <h1>The internet has layers<span>.</span></h1>
+            <p id="tagline">Every reply leaves a trace. Watch the patterns emerge.</p>
           </div>
           <div class="map-status">
             <span
@@ -268,6 +271,7 @@
               <i class="swatch cluster"></i>Coordinated
             </button>
           </nav>
+          <button id="dimension-button" class="dimension-button" aria-pressed="false" title="Switch between the spatial and flat maps">2D MAP</button>
           <button
             id="anon-button"
             class="icon-button"
@@ -283,6 +287,9 @@
           id="stage"
           aria-label="Interactive conversation network"
         >
+          <div id="scene3d" hidden></div>
+          <div class="scene-watermark" aria-hidden="true">LOOK<br />CLOSER.</div>
+          <div class="scene-coordinate" aria-hidden="true">SIGNAL SPACE / 001<br /><span>POSITION ≠ EVIDENCE</span></div>
           <div class="capture-view" id="capture-view" hidden>
             <div class="capture-screen">
               <img id="capture-frame" alt="Live view of the post being read" />
@@ -363,6 +370,15 @@
             </button>
             <div id="inspector-body"></div>
           </aside>
+        </section>
+        <section class="story" aria-label="The story of this analysis">
+          <div class="story-copy"><span id="story-kicker">01 / THE CROWD</span><h2 id="story-title">A conversation becomes a constellation.</h2><p id="story-detail">Each point is an account. Follow the signals beneath the surface.</p></div>
+          <nav class="story-chapters" aria-label="Reveal chapters">
+            <button data-chapter="0" aria-current="step"><b>01</b><span>The crowd</span></button>
+            <button data-chapter="1"><b>02</b><span>The echoes</span></button>
+            <button data-chapter="2"><b>03</b><span>The patterns</span></button>
+            <button data-chapter="3"><b>04</b><span>Your view</span></button>
+          </nav>
         </section>
         <div class="controls">
           <button

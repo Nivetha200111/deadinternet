@@ -69,4 +69,51 @@ class HeuristicClassifierTest {
         assertThat(result.summary().toLowerCase()).doesNotContain("is a bot");
         assertThat(String.join(" ", result.signalsForAutomation()).toLowerCase()).doesNotContain("bot");
     }
+
+    @Test
+    void fakeSupportReplyIsAutomationLikeEvenWithDistinctLanguage() {
+        var base = request(established("helper"), 0.1, false, 0, 0, 0, 1, 0);
+        var signals = new dev.deadinternet.analysis.TextSignalService().analyze(java.util.List.of(
+                "Kindly send a direct message to @CryptoFixer_Hub or reach them on telegram at t.me/wallet_helper_01 to "
+                        + "fix your locked account immediately."), "My wallet app says my account is suspended");
+        var phishing = new JevClassificationRequest(base.account(), base.reply(), base.features(), base.neighborReplies(),
+                base.otherRepliesByAccount(), "thread", signals);
+        var result = classifier.classify(phishing);
+        assertThat(result.classification()).isEqualTo(Classification.AUTOMATION_LIKE);
+        assertThat(result.signalsForAutomation()).anyMatch(s -> s.contains("off-platform contact"));
+        assertThat(classifier.classify(base).classification()).isEqualTo(Classification.HUMAN_LIKE);
+    }
+
+    private JevClassificationRequest withText(String text) {
+        var base = request(established("acct"), 0.1, false, 0, 0, 0, 1, 0);
+        var signals = new dev.deadinternet.analysis.TextSignalService().analyze(java.util.List.of(text), null);
+        return new JevClassificationRequest(base.account(), base.reply(), base.features(), base.neighborReplies(),
+                base.otherRepliesByAccount(), "feed", signals);
+    }
+
+    @Test
+    void researchedScamShapesAreAutomationLike() {
+        for (String scam : java.util.List.of(
+                "Thanks to @CryptoMentorJane I made $12,400 in just 9 days with her trading signals. Message her!",
+                "URGENT HIRING Work from home, earn $500/day, no experience needed! Comment #Interested and DM me on WhatsApp +1 555 0100",
+                "lonely tonight 😘 my private pics are in my bio 🔞",
+                "Follow for follow! I follow back 100% #F4F #followback drop your @ below")) {
+            var result = classifier.classify(withText(scam));
+            assertThat(result.classification()).as(scam).isEqualTo(Classification.AUTOMATION_LIKE);
+            assertThat(result.category()).as(scam).isIn(PostCategory.SCAM, PostCategory.FOLLOW_FARMING);
+        }
+    }
+
+    @Test
+    void researchedLookAlikesStayHumanLike() {
+        for (String ordinary : java.util.List.of(
+                "Sold 200 cookies at the school fair and made $340, the kids were thrilled.",
+                "We're hiring a backend engineer in Berlin (Go, Postgres). Apply through our careers page.",
+                "My portfolio link is in my bio if you want to see the full illustration series.",
+                "Thanks for sharing. The part about partial indexes saved us hours on our Postgres migration.")) {
+            var result = classifier.classify(withText(ordinary));
+            assertThat(result.classification()).as(ordinary).isEqualTo(Classification.HUMAN_LIKE);
+            assertThat(result.category()).as(ordinary).isEqualTo(PostCategory.PERSONAL);
+        }
+    }
 }

@@ -28,6 +28,8 @@
     frame: null,
     panelReady: false,
     collecting: null, // auto-collect timer
+    hidden: new Set(), // post types to fold, chosen in the panel
+    revealed: new Set(), // folded posts the reader chose to show anyway
   };
 
   // ------------------------------------------------------------------ reading the thread
@@ -77,7 +79,9 @@
     state.replies.clear();
     state.skipped.clear();
     state.results.clear();
+    state.revealed.clear();
     Collector.clearBadges();
+    Collector.clearHiding();
     if (state.panel) toPanel({ type: "reset" });
   }
 
@@ -169,6 +173,22 @@
       openPanel();
       toPanel({ type: "inspect", username: info.username });
     }, site);
+    // Both sites re-render posts as you scroll, which drops the fold; put it back.
+    applyHiding();
+  }
+
+  function applyHiding() {
+    Collector.applyHiding(state.results, state.hidden, state.revealed, (id) => {
+      state.revealed.add(id);
+      applyHiding();
+      sendHidden();
+    });
+    sendHidden();
+  }
+
+  /** Tells the panel how many posts on this page are folded right now. */
+  function sendHidden() {
+    toPanel({ type: "hiddenCount", count: document.querySelectorAll(".dil-collapsed").length });
   }
 
   function scrollToReplies(replyIds) {
@@ -211,11 +231,44 @@
       state.frame.src = PANEL_URL;
       state.frame.title = "Dead Internet Lens overlay";
       state.panel.appendChild(state.frame);
+      state.panel.appendChild(dockHandle());
       document.body.appendChild(state.panel);
     }
     state.panel.hidden = false;
     updateLauncher();
     sendCollected();
+  }
+
+  /** Drag the docked overlay's left edge to make it wider or narrower; the panel remembers the width. */
+  function dockHandle() {
+    const handle = document.createElement("div");
+    handle.className = "dil-resize";
+    handle.title = "Drag to resize · double-click to reset";
+    let start = null;
+    handle.addEventListener("pointerdown", (e) => {
+      start = { x: e.clientX, width: state.panel.getBoundingClientRect().width };
+      handle.setPointerCapture(e.pointerId);
+      state.panel.classList.add("dil-resizing");
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (start) setDockWidth(start.width + (start.x - e.clientX));
+    });
+    handle.addEventListener("pointerup", () => {
+      if (!start) return;
+      start = null;
+      state.panel.classList.remove("dil-resizing");
+      toPanel({ type: "dockWidth", width: state.dockWidth });
+    });
+    handle.addEventListener("dblclick", () => {
+      setDockWidth(null);
+      toPanel({ type: "dockWidth", width: null });
+    });
+    return handle;
+  }
+
+  function setDockWidth(px) {
+    state.dockWidth = px === null ? null : Math.round(Math.max(360, Math.min(innerWidth - 40, px)));
+    if (state.panel) state.panel.style.width = state.dockWidth === null ? "" : state.dockWidth + "px";
   }
 
   function closePanel() {
@@ -254,6 +307,7 @@
     switch (msg.type) {
       case "ready":
         state.panelReady = true;
+        if (msg.dockWidth) setDockWidth(msg.dockWidth);
         sendCollected();
         break;
       case "requestConversation":
@@ -281,6 +335,14 @@
         state.results = new Map(msg.items.map((item) => [item.replyId, item]));
         Collector.clearBadges();
         decorate();
+        break;
+      case "hide":
+        state.hidden = new Set(msg.categories || []);
+        applyHiding();
+        break;
+      case "showAll":
+        for (const id of state.results.keys()) state.revealed.add(id);
+        applyHiding();
         break;
       case "scrollTo":
         scrollToReplies(msg.replyIds || []);

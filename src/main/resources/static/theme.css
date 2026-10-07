@@ -1,0 +1,166 @@
+/*
+ * Dead Internet Lens theme: black and purple. The single source of colors and fonts for the app; style.css and
+ * observatory.css use these variables, and app.js / scene3d.js read them for canvas and WebGL drawing.
+ */
+:root {
+  color-scheme: dark;
+  /* surfaces: near-black with a violet undertone, lifting in steps */
+  --bg: #08060d;
+  --bg-raised: #120d1a;
+  --panel: #120d1af2;
+  --line: #2a2138;
+  --line-strong: #3f3352;
+  /* text */
+  --text: #f1ecf8;
+  --muted: #a99fbc;
+  --dim: #7b7090;
+  /* brand accent: violet. Never used for a classification, so it can't be mistaken for one. */
+  --accent: #c084fc;
+  --accent-strong: #a855f7;
+  --accent-light: #d8b4fe;
+  --accent-soft: #c084fc1f;
+  --accent-ink: #1a0b2e;
+  /* classification colors: distinct from the accent and from each other */
+  --human: #7cc4ff;
+  --uncertain: #f0c674;
+  --automation: #ff4f6d;
+  /* type: Syne for display, Bricolage Grotesque for interface text, Fragment Mono for data */
+  --display: "Syne", "Bricolage Grotesque", system-ui, sans-serif;
+  --sans: "Bricolage Grotesque", system-ui, sans-serif;
+  --mono: "Fragment Mono", ui-monospace, monospace;
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--sans);
+  font-optical-sizing: auto;
+}
+::selection {
+  background: #a855f766;
+  color: var(--text);
+}
+
+/* Display type: headlines, the index number and section titles. */
+h1,
+h2,
+.brand,
+.score-value,
+.overlay-summary b,
+.story h2,
+.inspector h2,
+.placeholder h1 {
+  font-family: var(--display);
+  font-weight: 700;
+}
+.map-heading h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+.score-value,
+.overlay-summary b {
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+/* Accent surfaces share one violet treatment. */
+.btn:not(.ghost),
+.chip.active,
+.dimension-button[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px #c084fc33, 0 6px 22px #a855f722;
+}
+.btn:not(.ghost) {
+  background: var(--accent-light);
+  color: var(--accent-ink);
+}
+.chip.active {
+  background: var(--accent-soft);
+  border-color: #c084fc66;
+  color: var(--text);
+}
+.app {
+  background: linear-gradient(160deg, #0f0a17f5, #08060df5 55%);
+  border-color: #c084fc1f;
+}
+.observatory {
+  background: radial-gradient(ellipse at 65% 40%, #a855f71a, transparent 70%);
+}
+.stage {
+  background:
+    radial-gradient(ellipse at 30% 45%, #7cc4ff0d, transparent 55%),
+    radial-gradient(ellipse at 75% 60%, #a855f714, transparent 55%);
+}
+
+/* Group and cluster labels: one style in 2D and 3D. The left edge carries the classification tone; the name stays
+   white for legibility. */
+.cluster-label,
+.spatial .cluster-label {
+  font: 9px var(--mono);
+  letter-spacing: 0.06em;
+  padding: 7px 10px 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid currentColor;
+  border-radius: 6px;
+  background: #120d1aeb;
+  box-shadow: 0 6px 22px #06040a80;
+  color: var(--automation);
+}
+.cluster-label.human,
+.spatial .cluster-label.human {
+  color: var(--human);
+  background: #120d1aeb;
+  border-color: var(--line-strong);
+}
+.cluster-label.uncertain,
+.spatial .cluster-label.uncertain {
+  color: var(--uncertain);
+  background: #120d1aeb;
+  border-color: var(--line-strong);
+}
+.cluster-label:before,
+.spatial .cluster-label:before {
+  display: none;
+}
+.cluster-label b {
+  color: var(--text);
+}
+.cluster-label:not(.compact) .full,
+.cluster-label:not(.compact) span {
+  display: block;
+}
+.cluster-label span {
+  margin: 3px 0 0;
+  font-size: 7.5px;
+  color: var(--muted);
+}
+.cluster-label.selected,
+.cluster-label:hover,
+.spatial .cluster-label:hover {
+  border-color: var(--accent);
+  border-left-color: currentColor;
+}
+.cluster-label.human:hover,
+.cluster-label.human.selected {
+  color: var(--human);
+}
+.cluster-label.uncertain:hover,
+.cluster-label.uncertain.selected {
+  color: var(--uncertain);
+}
+
+/* GPT's "SIGNAL SPACE / 001" coordinate replaces the older field label; showing both overlapped. */
+.field-label {
+  display: none;
+}
+/* The watermark is decoration: 3D only, and faint enough never to compete with data. */
+.scene-watermark {
+  display: none;
+}
+.spatial .scene-watermark {
+  display: block;
+  color: #c084fc05;
+  font-family: var(--display);
+}

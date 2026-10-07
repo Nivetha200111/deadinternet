@@ -25,18 +25,32 @@
       <button id="analyze" class="primary">Analyze thread</button>
     </div>
   </section>
+  <section class="tools">
+  <section class="clean" id="clean" hidden>
+    <div class="clean-head">
+      <label class="switch"><input type="checkbox" id="clean-on" checked /><i aria-hidden="true"></i><span id="clean-title">Clean my feed</span></label>
+      <span class="clean-summary" id="clean-summary"></span>
+      <button type="button" class="clean-toggle" id="clean-toggle" aria-expanded="true" aria-controls="clean-chips" title="Hide the post-type chips">▾</button>
+    </div>
+    <div class="clean-chips" id="clean-chips" role="group" aria-label="Post types to hide"></div>
+    <small class="clean-note" id="clean-note">Hidden posts fold into a one-line note. Click the note to read one anyway.</small>
+  </section>
   <div class="options">
     <label><input type="checkbox" id="anon"> Anonymize handles in the graph</label>
     <span id="server-state" class="server"></span>
   </div>
+  </section>
   <p class="message" id="message" hidden></p>
   <main id="stage">
     <div class="placeholder" id="placeholder">
-      <p><b>How it works</b></p>
+      <div class="welcome-orbit" aria-hidden="true"><i></i><i></i><i></i><b>◉</b></div>
+      <span class="welcome-eyebrow">A DIFFERENT WAY TO SEE YOUR FEED</span>
+      <h1>There’s more<br>beneath the scroll<span>.</span></h1>
+      <p class="welcome-intro">Turn the noise into a map. Discover the voices, echoes and patterns in what you read.</p>
       <ol>
         <li>On your X or LinkedIn feed, a profile or search results, scroll to collect the posts themselves. Or open a single post to collect its replies or comments. <b>Auto-collect</b> scrolls for you.</li>
-        <li>Press <b>Analyze posts</b> (or <b>Analyze thread</b>). Text is sent only to your local Lens server.</li>
-        <li>Watch the graph build. Each post or reply on the page gets a badge: click one to inspect that account, or click a node in the graph to jump to it.</li>
+        <li>Press <b>Analyze posts</b> (or <b>Analyze thread</b>). Your local Lens server analyzes the sample using its configured classifier.</li>
+        <li>Explore the 3D signal map. Click an account to see its evidence, or use <b>Clean my feed</b> to fold selected post types.</li>
       </ol>
       <p class="fine">Classifications describe text, timing and graph signals in what was collected. Account metadata isn't visible on the page, so it isn't used. Results are an experimental heuristic, never proof of who runs an account.</p>
     </div>

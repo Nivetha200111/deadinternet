@@ -1,5 +1,8 @@
 package dev.deadinternet.classification;
 
+import dev.deadinternet.analysis.TextSignalService;
+import dev.deadinternet.analysis.TextSignals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -102,6 +105,9 @@ public class HeuristicClassifier implements JevClassifier {
             counter.add("Established audience (" + account.followers() + " followers)");
         }
         score *= 1 - Math.min(0.5, dampening);
+        // Spam markers set a floor rather than adding to the score: a phishing reply is usually unlike every other
+        // reply, which would otherwise count as evidence of a human.
+        score = Math.max(score, spam(request.textSignals(), signals));
 
         double automation = round(clamp(score, 0.01, 0.97));
         double coordination = coordination(f);
@@ -119,7 +125,92 @@ public class HeuristicClassifier implements JevClassifier {
         double confidence = round(clamp(0.35 + Math.abs(automation - 0.5) * 0.7 + Math.min(0.12, evidence * 0.02), 0, 0.85));
         return new JevClassification(thresholds.classify(automation), automation, coordination, confidence,
                 List.copyOf(signals), List.copyOf(counter), List.copyOf(coordinationSignals),
-                summary(automation, coordination, account.hasMetadata()));
+                summary(automation, coordination, account.hasMetadata()),
+                category(request.textSignals(), thresholds.classify(automation)));
+    }
+
+    /**
+     * Scores the spam markers phishing replies, airdrop scams, engagement bait and affiliate spam leave in the text,
+     * adding each one found to {@code signals}. An off-platform contact plus pressure language reaches automation-like.
+     */
+    /** Human-like accounts are personal posts; otherwise the most serious recognizable pattern names the group. */
+    static String category(TextSignals t, Classification label) {
+        if (label == Classification.HUMAN_LIKE) return PostCategory.PERSONAL;
+        boolean strongAdult = t.adultLures().stream().anyMatch(l -> !TextSignalService.BIO_POINTERS.contains(l));
+        boolean pointedMoney = !t.moneyClaims().isEmpty() && (t.mentions() > 0 || !t.messagingContacts().isEmpty());
+        boolean job = t.jobLures().size() >= 2 || (!t.jobLures().isEmpty() && !t.messagingContacts().isEmpty());
+        if (!t.messagingContacts().isEmpty() || t.cryptoTerms().size() >= 2 || strongAdult || pointedMoney || job) {
+            return PostCategory.SCAM;
+        }
+        if (!t.followFarming().isEmpty()) return PostCategory.FOLLOW_FARMING;
+        if (t.genericPraise()) return PostCategory.GENERIC_COMMENT;
+        if (t.threadHook()) return PostCategory.ENGAGEMENT_BAIT;
+        return PostCategory.fromLabel(label);
+    }
+
+    static double spam(TextSignals t, List<String> signals) {
+        double spam = 0;
+        if (!t.messagingContacts().isEmpty()) {
+            spam += 0.45;
+            signals.add("Points people to an off-platform contact (" + String.join(", ", t.messagingContacts()) + ")");
+        }
+        if (t.cryptoTerms().size() >= 2) {
+            spam += t.links() > 0 ? 0.45 : 0.25;
+            signals.add("Wallet, giveaway or token language (" + String.join(", ", t.cryptoTerms()) + ")"
+                    + (t.links() > 0 ? " with a link" : ""));
+        }
+        if (!t.urgencyTerms().isEmpty()) {
+            spam += t.urgencyTerms().size() >= 2 ? 0.2 : 0.08;
+            signals.add("Pressure language (" + String.join(", ", t.urgencyTerms()) + ")");
+        }
+        if (!t.shortenedLinks().isEmpty()) {
+            spam += 0.15;
+            signals.add("Link shortener hides the destination (" + String.join(", ", t.shortenedLinks()) + ")");
+        }
+        if (t.parentOverlap() != null && t.parentOverlap() < 0.05 && t.links() > 0) {
+            spam += 0.2;
+            signals.add("Off-topic reply carrying a link");
+        }
+        if (t.threadHook()) {
+            spam += 0.12;
+            signals.add("Thread-bait hook (🧵, 👇, \"1/10\", \"so you don't have to\")");
+        }
+        if (t.emojis() >= 3 && t.emojiDensity() >= 0.12) {
+            spam += 0.08;
+            signals.add("Dense emoji styling (" + t.emojis() + " emojis)");
+        }
+        if (t.uppercaseRatio() >= 0.5) {
+            spam += 0.05;
+            signals.add("Mostly upper-case text");
+        }
+        var adult = t.adultLures().stream().filter(l -> !TextSignalService.BIO_POINTERS.contains(l)).toList();
+        if (!adult.isEmpty()) {
+            spam += 0.7;
+            signals.add("Adult or dating lure (" + String.join(", ", t.adultLures()) + ")");
+        } else if (!t.adultLures().isEmpty()) {
+            spam += 0.1; // "link in bio" alone is everyday creator language
+            signals.add("Points readers to a bio or profile link");
+        }
+        if (!t.moneyClaims().isEmpty()) {
+            // "made $340" fits a bake sale; a profit claim that also points at someone or somewhere is the scam shape.
+            boolean pointed = t.mentions() > 0 || !t.messagingContacts().isEmpty();
+            spam += pointed ? (t.moneyClaims().size() >= 2 ? 0.7 : 0.5) : 0.2;
+            signals.add("Profit or recovery claim (" + String.join(", ", t.moneyClaims()) + ")"
+                    + (pointed ? " pointing to another account or contact" : ""));
+        }
+        if (!t.jobLures().isEmpty()) {
+            spam += t.jobLures().size() >= 2 || !t.messagingContacts().isEmpty() ? 0.45 : 0.2;
+            signals.add("Job-scam language (" + String.join(", ", t.jobLures()) + ")");
+        }
+        if (!t.followFarming().isEmpty()) {
+            spam += t.followFarming().size() >= 2 ? 0.7 : 0.45;
+            signals.add("Follower farming (" + String.join(", ", t.followFarming()) + ")");
+        }
+        if (t.genericPraise()) {
+            spam += 0.3;
+            signals.add("Generic praise that could sit under any post");
+        }
+        return Math.min(0.95, spam);
     }
 
     /** Saturates with the number of coordinated partners, scaled by the strongest link. */

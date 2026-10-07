@@ -7,7 +7,8 @@ public record AccountNode(String id, String username, Integer accountAgeDays, In
                           double automationLikelihood, double coordinationLikelihood, double confidence,
                           String classificationSource, List<String> signalsForAutomation,
                           List<String> signalsAgainstAutomation, List<String> coordinationSignals, String summary,
-                          int degree, String clusterId, int coordinatedAccounts, List<ReplyView> replies) {
+                          int degree, String clusterId, int coordinatedAccounts, String category,
+                          List<ReplyView> replies) {
 
     public record ReplyView(String id, String text, long secondsAfterParent, boolean duplicate) {}
 }

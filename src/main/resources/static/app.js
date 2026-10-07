@@ -41,9 +41,12 @@
     automation_like: cssVar("--automation"),
     text: cssVar("--text"),
     accent: cssVar("--accent"),
-    neutral: "#888a95",
-    similar: "#989aa3",
+    bg: cssVar("--bg"),
+    neutral: "#8e819c",
+    similar: "#9d92a9",
   };
+  // Canvas and Cytoscape text can't use CSS variables directly; read the theme's font stacks once.
+  const FONT = { mono: cssVar("--mono"), display: cssVar("--display") };
   const LABEL = {
     human_like: "Human-like",
     uncertain: "Uncertain",
@@ -59,6 +62,27 @@
     LOCAL_HEURISTIC: "Local heuristic (JEV not configured)",
     HEURISTIC_FALLBACK: "JEV failed: heuristic fallback, held at uncertain",
   };
+  // Feed groups: what kind of posting an account does, ordered from personal posts to scams.
+  const CATEGORY = {
+    personal: ["Personal posts", "Written in the author's own voice: specific, casual or tied to their own life."],
+    mixed: ["Mixed signals", "Some signs point each way; nothing decisive."],
+    too_little_text: ["Too little text", "A word or two, or only a caption: not enough to judge who wrote it."],
+    ai_written: ["AI-written", "Text that reads as written by an AI model."],
+    content_farm: ["Content farm", "Recycled facts, quotes, trivia or headlines posted for reach, often on a schedule."],
+    generic_comment: ["Generic comments", "Praise that could sit under any post, typical of AI comment tools and engagement pods."],
+    engagement_bait: ["Engagement bait", "Growth-hack templates and hooks built to farm reach."],
+    follow_farming: ["Follower farming", "Follow-for-follow and follower selling."],
+    automated: ["Automation-like", "Repetition or timing that points to automation, without a named content pattern."],
+    scam: ["Scams", "Phishing, airdrop, investment, recovery, job, adult or affiliate scams."],
+  };
+  // A feed's accounts are unrelated: nothing connects them, so the graph groups them by post type instead.
+  const isFeed = () => state.graph?.analysis.kind === "feed";
+  const LEGEND_HTML = document.getElementById("legend").innerHTML;
+  function categoryOf(a) {
+    if (a.category && CATEGORY[a.category]) return a.category;
+    // Analyses made before categories existed fall back to the label.
+    return { human_like: "personal", uncertain: "mixed", automation_like: "automated" }[visualClass(a)];
+  }
   const rgba = (hex, a) => {
     const n = parseInt(hex.slice(1), 16);
     return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
@@ -174,6 +198,58 @@
     dpr = 1,
     cy = null;
 
+  let scene3d = null, spatial = false;
+  function setDimension(value) {
+    spatial = value && Boolean(scene3d);
+    stage.classList.toggle('spatial', spatial);
+    $('#scene3d').hidden = !spatial;
+    $('#dimension-button').textContent = spatial ? '3D SPACE' : '2D MAP';
+    $('#dimension-button').setAttribute('aria-pressed', String(spatial));
+    $('#dimension-button').title = spatial ? 'Switch to the 2D map' : 'Switch to the 3D space';
+    $('#tip').hidden = true;
+    if (spatial) scene3d.resize();
+    else { $$('#cluster-labels button').forEach(b => { b.style.visibility = ''; b.style.pointerEvents = ''; }); resize(); }
+  }
+  $('#dimension-button').onclick = () => setDimension(!spatial);
+  import('./scene3d.js').then(({ LensScene3D }) => {
+    scene3d = new LensScene3D($('#scene3d'), {
+      select: id => state.pick ? pickForPath(id) : inspectAccount(id),
+      clear: () => clearFocus(),
+      failed: () => { setDimension(false); $('#dimension-button').disabled = true; $('#dimension-button').title = '3D unavailable; the 2D map remains available'; },
+      hover: (id, x, y) => {
+        const tip = $('#tip'); tip.hidden = !id;
+        if (id) { tip.textContent = `${nameOf(id)} · Click to inspect`; tip.style.left = Math.min(W - 210, Math.max(12, x + 15)) + 'px'; tip.style.top = Math.max(10, y - 38) + 'px'; }
+      },
+    });
+    if (state.graph) scene3d.load(state.graph);
+    setDimension(true);
+  }).catch(() => { $('#dimension-button').disabled = true; $('#dimension-button').title = '3D unavailable; the 2D map remains available'; });
+
+  function updateStory() {
+    if (!state.graph) return;
+    const g = state.graph, feed = isFeed();
+    const chapter = state.t < 3200 ? 0 : state.t < 8200 ? 1 : state.t < 11600 ? 2 : 3;
+    const counts = countsByClass();
+    const stories = [
+      ['THE CROWD', `${fmt(g.stats.accounts)} accounts. One wider picture.`, `${fmt(g.stats.replies)} ${feed ? 'posts' : 'replies'} become a constellation. Each point represents an account in this sample.`],
+      ['THE ECHOES', feed ? 'Different voices. Familiar patterns.' : 'Some signals echo across accounts.', feed ? 'Reading language and posting signals. Nearby points share a post type, not a proven relationship.' : `${fmt(g.edges.filter(e => e.type === 'SIMILAR').length)} similarity links. Lines show measured connections; distance alone tells no story.`],
+      ['THE PATTERNS', feed ? `${g.clusters.length} post types come into focus.` : `${g.clusters.length} clusters come into focus.`, `${counts.human_like} human-like · ${counts.uncertain} uncertain · ${counts.automation_like} automation-like. These are signal estimates, not identity verdicts.`],
+      ['YOUR VIEW', 'Now, follow your curiosity.', feed ? 'Orbit the map. Inspect a post type or an account. Use Clean my feed in the extension to choose what stays visible.' : 'Orbit the map. Open an account. Trace a connection. The evidence is yours to explore.'],
+    ];
+    const s = stories[chapter];
+    $('#story-kicker').textContent = `0${chapter + 1} / ${s[0]}`;
+    $('#story-title').textContent = s[1]; $('#story-detail').textContent = s[2];
+    $$('button[data-chapter]').forEach(b => b.setAttribute('aria-current', Number(b.dataset.chapter) === chapter ? 'step' : 'false'));
+    stage.dataset.chapter = chapter;
+  }
+  $$('[data-chapter]').forEach(b => b.onclick = () => {
+    if (!state.graph) return;
+    state.t = [3000, 6500, 11000, TIMELINE_END][Number(b.dataset.chapter)];
+    state.playing = false; state.paused = true;
+    seedPositions(); for (let i = 0; i < 180; i++) simulate();
+    updateProgress(); updateHeader();
+  });
+
   // ---------------------------------------------------------------- classification at current sensitivity
   function thresholds() {
     const base = state.graph?.thresholds ?? { human: 0.4, automation: 0.65 };
@@ -200,6 +276,8 @@
         : "automation_like";
   }
   function passesFilter(a) {
+    // Post types the extension's "Clean my feed" hides are dimmed here too.
+    if (state.hiddenGroups?.has(a.category)) return false;
     if (state.filter === "all") return true;
     if (state.filter === "coordinated")
       return Boolean(a.clusterId) || a.coordinatedAccounts > 0;
@@ -242,7 +320,7 @@
       r: radius(cl),
       x: W * (0.17 + cl.averageAutomation * 0.72),
       // Few clusters keep the art-directed two rows; many spread over the height in a golden-ratio sequence.
-      y: H * (few ? (i === 0 ? 0.32 : 0.74) : 0.16 + ((i * 0.618034) % 1) * 0.68),
+      y: H * (isFeed() ? 0.22 + ((i * 0.618034) % 1) * 0.56 : few ? (i === 0 ? 0.32 : 0.74) : 0.16 + ((i * 0.618034) % 1) * 0.68),
     }));
     const postClear = 64;
     for (let iteration = 0; iteration < 260; iteration++) {
@@ -259,9 +337,10 @@
           b.x += (dx / d) * push; b.y += (dy / d) * push;
         }
         const dx = a.x - c.x, dy = a.y - c.y, d = Math.hypot(dx, dy) || 1;
-        if (d < a.r + postClear) { a.x = c.x + (dx / d) * (a.r + postClear); a.y = c.y + (dy / d) * (a.r + postClear); }
-        a.x = clamp(a.x, a.r + 30, W - a.r - 30);
-        a.y = clamp(a.y, a.r + 30, H - a.r - 44);
+        if (!isFeed() && d < a.r + postClear) { a.x = c.x + (dx / d) * (a.r + postClear); a.y = c.y + (dy / d) * (a.r + postClear); }
+        // A feed keeps clear of the zoom controls (right) and the legend line (top), which its group labels would cover.
+        a.x = clamp(a.x, a.r + 30, W - a.r - (isFeed() ? 80 : 30));
+        a.y = clamp(a.y, a.r + (isFeed() ? 62 : 30), H - a.r - 44);
       }
     }
     for (const disc of discs) {
@@ -364,6 +443,7 @@
         b.vy -= dy * f;
       }
       // Keep clear of the original post.
+      if (isFeed()) continue;
       const dx = a.x - post.x,
         dy = a.y - post.y,
         d2 = dx * dx + dy * dy + 1;
@@ -387,8 +467,9 @@
       }
     };
     // Every reply tethers its account loosely to the original post.
-    for (const [id, n] of live)
-      spring(post, n, R * 0.3, 0.0016 * (1 - 0.93 * pClass));
+    if (!isFeed())
+      for (const [id, n] of live)
+        spring(post, n, R * 0.3, 0.0016 * (1 - 0.93 * pClass));
     for (const e of g.edges) {
       const a = sim.get(e.source),
         b = sim.get(e.target);
@@ -463,10 +544,11 @@
         group: "nodes",
         data: { id: a.id, kind: "account", size: nodeSize(a) },
       });
-      elements.push({
-        group: "edges",
-        data: { id: "r:" + a.id, source: "post", target: a.id, kind: "REPLY" },
-      });
+      if (!isFeed())
+        elements.push({
+          group: "edges",
+          data: { id: "r:" + a.id, source: "post", target: a.id, kind: "REPLY" },
+        });
     }
     const clusterOf = new Map(g.accounts.map((a) => [a.id, a.clusterId]));
     g.edges.forEach((e, i) => {
@@ -503,13 +585,13 @@
             "border-color": COLOR.neutral,
             "overlay-opacity": 0,
             label: "",
-            "font-family": "IBM Plex Mono",
+            "font-family": FONT.mono,
             "font-size": 9,
             color: COLOR.text,
             "text-valign": "center",
             "text-halign": "right",
             "text-margin-x": 8,
-            "text-outline-color": "#0c0c0d",
+            "text-outline-color": "#0c0712",
             "text-outline-width": 2,
             "text-outline-opacity": 0.9,
           },
@@ -523,13 +605,14 @@
             "background-color": COLOR.accent,
             "border-width": 1,
             "border-color": "#ffffff",
-            label: state.graph.analysis.kind === "feed" ? "YOUR FEED" : "ORIGINAL POST",
+            label: "ORIGINAL POST",
+            display: isFeed() ? "none" : "element",
             "text-valign": "bottom",
             "text-halign": "center",
             "text-margin-y": 10,
             "text-margin-x": 0,
             "font-size": 7,
-            color: "#92949e",
+            color: "#978ca4",
           },
         },
         { selector: "node.labeled", style: { label: "data(label)" } },
@@ -750,6 +833,167 @@
   }
   new ResizeObserver(resize).observe(stage);
 
+  // ---------------------------------------------------------------- layout: every block is resizable
+  // Drag a handle to resize its block, click it to collapse or expand, double-click to reset. Sizes are remembered per
+  // view (the extension overlay has its own), and the map always takes the space that's left.
+  const layoutKey = (name) => `dil-layout:${EMBED ? "embed:" : ""}${name}`;
+  const loadSize = (name) => {
+    try {
+      const v = localStorage.getItem(layoutKey(name));
+      return v === null ? null : Number(v);
+    } catch {
+      return null;
+    }
+  };
+  const saveSize = (name, v) => {
+    try {
+      if (v === null) localStorage.removeItem(layoutKey(name));
+      else localStorage.setItem(layoutKey(name), String(Math.round(v)));
+    } catch {
+      /* storage unavailable: sizes last for this visit */
+    }
+  };
+
+  /**
+   * One draggable handle. get() reads the block's current size, set(px | null) applies it (null restores the natural
+   * size); grow is +1 when dragging right/down enlarges the block and -1 when it shrinks it.
+   */
+  function splitter({ name, handle, axis, grow, min, max, get, set, collapsible, label, defaultSize }) {
+    handle.classList.add("splitter", axis === "x" ? "splitter-x" : "splitter-y");
+    handle.tabIndex = 0;
+    handle.setAttribute("role", "separator");
+    handle.setAttribute("aria-orientation", axis === "x" ? "vertical" : "horizontal");
+    if (label) handle.dataset.label = label;
+    let lastOpen = null;
+    const apply = (px, persist = true) => {
+      const collapsed = collapsible && px !== null && px < 24;
+      set(collapsed ? 0 : px === null ? null : clamp(px, min, max()));
+      handle.classList.toggle("collapsed", Boolean(collapsed));
+      handle.title = collapsed
+        ? `Show ${label?.toLowerCase() ?? "panel"} (drag or click)`
+        : "Drag to resize · click to collapse · double-click to reset";
+      if (persist) saveSize(name, collapsed ? 0 : px);
+    };
+    const saved = loadSize(name);
+    apply(saved ?? defaultSize ?? null, false);
+    const toggle = () => {
+      const now = get();
+      if (now > 0) {
+        lastOpen = now;
+        apply(0);
+      } else apply(lastOpen ?? null);
+    };
+
+    let start = null,
+      pendingToggle = null;
+    handle.addEventListener("pointerdown", (e) => {
+      start = { pos: axis === "x" ? e.clientX : e.clientY, size: get(), moved: false };
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add("dragging");
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!start) return;
+      const delta = (axis === "x" ? e.clientX : e.clientY) - start.pos;
+      if (Math.abs(delta) > 3) start.moved = true;
+      if (start.moved) apply(start.size + grow * delta);
+    });
+    handle.addEventListener("pointerup", () => {
+      if (!start) return;
+      handle.classList.remove("dragging");
+      // A click without a drag collapses or expands, after a short wait: toggling at once would move the handle out
+      // from under a second click, and a double-click (reset) could never land.
+      if (!start.moved && collapsible) {
+        if (pendingToggle) {
+          clearTimeout(pendingToggle);
+          pendingToggle = null;
+        } else pendingToggle = setTimeout(() => {
+          pendingToggle = null;
+          toggle();
+        }, 250);
+      }
+      start = null;
+    });
+    handle.addEventListener("dblclick", () => {
+      clearTimeout(pendingToggle);
+      pendingToggle = null;
+      apply(null);
+    });
+    handle.addEventListener("keydown", (e) => {
+      const step = e.shiftKey ? 60 : 20;
+      const keys = axis === "x" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+      if (e.key === keys[0] || e.key === keys[1]) {
+        e.preventDefault();
+        apply(get() + grow * (e.key === keys[1] ? step : -step));
+      } else if ((e.key === "Enter" || e.key === " ") && collapsible) {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  }
+
+  // A block whose height is set directly; null hands it back to its content.
+  const heightOf = (el) => ({
+    get: () => el.getBoundingClientRect().height,
+    set: (px) => {
+      el.style.height = px === null ? "" : px + "px";
+      el.classList.toggle("sized", px !== null);
+      el.classList.toggle("block-collapsed", px === 0);
+    },
+  });
+  const natural = (el) => () => {
+    const was = el.style.height;
+    el.style.height = "";
+    const h = el.scrollHeight;
+    el.style.height = was;
+    return Math.max(h, 40);
+  };
+
+  (function initLayout() {
+    const observatory = $(".observatory");
+    // Heading: its handle sits between the toolbar and the map.
+    const heading = $(".map-heading");
+    const headingHandle = document.createElement("div");
+    $(".map-toolbar").after(headingHandle);
+    splitter({
+      name: "heading", handle: headingHandle, axis: "y", grow: 1, min: 0, max: natural(heading),
+      collapsible: true, label: "Heading", defaultSize: EMBED ? 0 : null, ...heightOf(heading),
+    });
+    // Story strip: its handle sits on top of it; dragging up makes it taller.
+    const story = $(".story");
+    if (story) {
+      const storyHandle = document.createElement("div");
+      story.before(storyHandle);
+      splitter({
+        name: "story", handle: storyHandle, axis: "y", grow: -1, min: 0, max: () => Math.max(natural(story)(), 280),
+        collapsible: true, label: "Story", defaultSize: EMBED ? 0 : null, ...heightOf(story),
+      });
+    }
+    // Sidebar width.
+    const app = $(".app");
+    const sideHandle = document.createElement("div");
+    sideHandle.classList.add("splitter-sidebar");
+    app.appendChild(sideHandle);
+    splitter({
+      name: "sidebar", handle: sideHandle, axis: "x", grow: 1, min: 200, max: () => Math.min(460, innerWidth * 0.4),
+      get: () => $(".sidebar").getBoundingClientRect().width,
+      set: (px) => (px === null ? app.style.removeProperty("--sidebar-w") : app.style.setProperty("--sidebar-w", px + "px")),
+    });
+    // Inspector: a drawer over the whole map area, resizable from its left edge.
+    const inspector = $("#inspector");
+    observatory.appendChild(inspector);
+    const inspectorHandle = document.createElement("div");
+    inspector.prepend(inspectorHandle);
+    splitter({
+      name: "inspector", handle: inspectorHandle, axis: "x", grow: -1, min: 260, max: () => observatory.clientWidth * 0.7,
+      get: () => inspector.getBoundingClientRect().width,
+      set: (px) => (px === null ? observatory.style.removeProperty("--inspector-w") : observatory.style.setProperty("--inspector-w", px + "px")),
+    });
+    new MutationObserver(() => observatory.classList.toggle("inspecting", !inspector.hidden)).observe(inspector, {
+      attributes: true,
+      attributeFilter: ["hidden"],
+    });
+  })();
+
   function convexHull(points) {
     const p = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
     if (p.length < 3) return p;
@@ -804,7 +1048,7 @@
     uctx.clearRect(0, 0, W, H);
     // Decorative dust is sub-pixel and never interactive; only real accounts get full-size nodes.
     for (let i = 0; i < 350; i++) {
-      uctx.fillStyle = rgba("#9698a1", 0.06 + hash("alpha" + i) * 0.17);
+      uctx.fillStyle = rgba("#9b90a7", 0.06 + hash("alpha" + i) * 0.17);
       uctx.fillRect(
         hash("x" + i) * W,
         hash("y" + i) * H,
@@ -812,7 +1056,7 @@
         i % 9 === 0 ? 1 : 0.6,
       );
     }
-    uctx.strokeStyle = "#9698a10d";
+    uctx.strokeStyle = "#9b90a70d";
     uctx.lineWidth = 0.6;
     for (let x = 30; x < W; x += 82)
       for (let y = 38; y < H; y += 82) {
@@ -827,7 +1071,7 @@
     const zoom = cy.zoom();
     const post = cy.getElementById("post").renderedPosition();
     // Pulse from the original post while the conversation is being traced.
-    if (state.playing && !reduceMotion) {
+    if (state.playing && !reduceMotion && !isFeed()) {
       const r = ((time * 0.06) % 260) * zoom;
       uctx.beginPath();
       uctx.arc(post.x, post.y, r, 0, Math.PI * 2);
@@ -835,6 +1079,14 @@
       uctx.lineWidth = 1;
       uctx.stroke();
     }
+    if (!isFeed()) drawRoot(post, zoom);
+
+    // Cluster hulls (in a feed, post-type groups).
+    drawHulls(zoom);
+    drawAccounts(zoom);
+  }
+
+  function drawRoot(post, zoom) {
     const rootGlow = uctx.createRadialGradient(
       post.x,
       post.y,
@@ -860,8 +1112,9 @@
       uctx.lineWidth = 1;
       uctx.stroke();
     }
+  }
 
-    // Cluster hulls.
+  function drawHulls(zoom) {
     const pCluster = phase("cluster");
     const placements = [];
     for (const c of state.graph.clusters) {
@@ -924,6 +1177,9 @@
       }
     }
     placeClusterLabels(placements);
+  }
+
+  function drawAccounts(zoom) {
     for (const a of state.graph.accounts) {
       if (!discovered(a.id)) continue;
       const node = cy.getElementById(a.id),
@@ -952,7 +1208,7 @@
         hash(a.id + "label") > 0.89 &&
         W > 650
       ) {
-        uctx.font = "7px 'IBM Plex Mono'";
+        uctx.font = `7px ${FONT.mono}`;
         uctx.fillStyle = rgba(color, 0.65);
         uctx.fillText(displayName(a), p.x + r + 7, p.y + 3);
       }
@@ -1017,12 +1273,12 @@
     );
     octx.stroke();
     octx.setLineDash([]);
-    octx.font = "500 9.5px 'IBM Plex Mono'";
+    octx.font = `9.5px ${FONT.mono}`;
     octx.textAlign = "center";
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
       if (p.type === "Reply") {
-        octx.fillStyle = "#08090b";
+        octx.fillStyle = "#09060d";
         octx.strokeStyle = COLOR.text;
         octx.lineWidth = 1.2;
         octx.fillRect(p.x - 4, p.y - 4, 8, 8);
@@ -1039,7 +1295,7 @@
               : "POSTED";
         const mx = (p.x + q.x) / 2,
           my = (p.y + q.y) / 2 - 7;
-        octx.fillStyle = "rgba(8, 9, 11, 0.8)";
+        octx.fillStyle = rgba(COLOR.bg, 0.8);
         const w = octx.measureText(label).width + 8;
         octx.fillRect(mx - w / 2, my - 9, w, 13);
         octx.fillStyle = COLOR.text;
@@ -1107,9 +1363,8 @@
             ? idleFrames + 1
             : 0;
       }
-      render();
-      drawUnderlay(time);
-      drawOverlay(time);
+      if (spatial) scene3d.render({ phase, active: isActive, kind: visualClass, selected: state.focus?.primary, path: state.path?.accountIds });
+      else { render(); drawUnderlay(time); drawOverlay(time); }
     }
     requestAnimationFrame(frame);
   }
@@ -1136,13 +1391,13 @@
       ps > 0 ? Math.round(g.score.score * 100 * ps) : "–";
     $("#overlay-score").textContent = $("#score-value").textContent;
     $("#overlay-counts").textContent =
-      `${g.stats.accounts} ACCOUNTS · ${g.stats.clusters} CLUSTERS`;
+      `${g.stats.accounts} ACCOUNTS · ${isFeed() ? g.clusters.length + " POST TYPES" : g.stats.clusters + " CLUSTERS"}`;
     $("#axis").classList.toggle("visible", p > 0.3);
     const t = thresholds();
     $("#sens-readout").textContent = `automation-like ≥ ${pct(t.automation)}`;
     $("#sens-number").textContent = state.sensitivity;
     $("#sensitivity").style.background =
-      `linear-gradient(to right,var(--accent) ${state.sensitivity}%,#383a40 ${state.sensitivity}%)`;
+      `linear-gradient(to right,var(--accent) ${state.sensitivity}%,#3b3048 ${state.sensitivity}%)`;
     for (const [kind, short] of [
       ["human_like", "human"],
       ["uncertain", "uncertain"],
@@ -1228,10 +1483,11 @@
   }
 
   function updateTimeline() {
+    updateStory();
     const t = state.t;
     $("#timeline-range").value = t;
     $("#timeline-range").style.background =
-      `linear-gradient(to right,var(--accent) ${(t / TIMELINE_END) * 100}%,#383a40 ${(t / TIMELINE_END) * 100}%)`;
+      `linear-gradient(to right,var(--accent) ${(t / TIMELINE_END) * 100}%,#3b3048 ${(t / TIMELINE_END) * 100}%)`;
     $("#timeline-time").textContent = (t / 1000).toFixed(1) + " / 12.4s";
     $("#timeline-phase").textContent =
       t < 3200
@@ -1307,8 +1563,23 @@
       (graph.analysis.provider === "JEV"
         ? "JEV CLASSIFIER"
         : "LOCAL HEURISTIC");
-    $("#network-stats").textContent =
-      `${graph.stats.accounts} ACCOUNTS  /  ${fmt(graph.stats.comparisons)} COMPARISONS  /  ${graph.stats.clusters} CLUSTERS`;
+    const feed = graph.analysis.kind === "feed";
+    if (feed) graph.clusters = feedGroups(graph);
+    document.body.classList.toggle("feed-mode", feed);
+    $("#legend").innerHTML = feed
+      ? "<span>Grouped by post type · color: signals · left to right: automation likelihood</span>"
+      : LEGEND_HTML;
+    $("#path-button").title = feed ? "What kinds of posts this feed is made of" : "Pick two accounts to trace a behavioral path";
+    $("#path-button span").innerHTML = feed
+      ? "Post types<small>SEE THE BREAKDOWN</small>"
+      : "Find a connection<small>FOLLOW THE EVIDENCE</small>";
+    $$(".timeline-labels b")[2].textContent = feed ? "Group" : "Connect";
+    $("#tagline").textContent = feed
+      ? "Every post leaves a trace. See what your feed is made of."
+      : "Every reply leaves a trace. Watch the patterns emerge.";
+    $("#network-stats").textContent = feed
+      ? `${graph.stats.accounts} ACCOUNTS  /  ${graph.stats.replies} POSTS  /  ${graph.clusters.length} POST TYPES`
+      : `${graph.stats.accounts} ACCOUNTS  /  ${fmt(graph.stats.comparisons)} COMPARISONS  /  ${graph.stats.clusters} CLUSTERS`;
     const post = graph.post;
     setPostLine(post);
     renderSourceContext();
@@ -1319,9 +1590,10 @@
         ? "Classification: JEV endpoint. If JEV fails for an account, it is held at uncertain and marked as fallback."
         : "Classification: local heuristic, because no JEV endpoint is configured (set JEV_URL to use JEV).";
     $("#cluster-labels").innerHTML = graph.clusters
-      .map(
-        (c) =>
-          `<button class="cluster-label" data-cluster="${esc(c.id)}" title="Cluster ${String(c.index).padStart(2, "0")} · ${c.accountIds.length} accounts"><b class="full">Cluster ${String(c.index).padStart(2, "0")}</b><b class="short">C${String(c.index).padStart(2, "0")}</b><span>${c.accountIds.length} accounts</span></button>`,
+      .map((c) =>
+        c.group
+          ? `<button class="cluster-label" data-cluster="${esc(c.id)}" title="${esc(CATEGORY[c.group][1])}"><b class="full">${esc(CATEGORY[c.group][0])}</b><b class="short">${esc(CATEGORY[c.group][0].split(" ")[0])}</b><span>${c.accountIds.length} account${c.accountIds.length === 1 ? "" : "s"}</span></button>`
+          : `<button class="cluster-label" data-cluster="${esc(c.id)}" title="Cluster ${String(c.index).padStart(2, "0")} · ${c.accountIds.length} accounts"><b class="full">Cluster ${String(c.index).padStart(2, "0")}</b><b class="short">C${String(c.index).padStart(2, "0")}</b><span>${c.accountIds.length} accounts</span></button>`,
       )
       .join("");
     $$("[data-cluster]").forEach((b) => {
@@ -1335,8 +1607,85 @@
     buildGraph();
     seedPositions();
     renderAccountList();
+    if (scene3d) scene3d.load(graph);
     syncFilterButtons();
     replay();
+  }
+
+  /** One pseudo-cluster per post type, so the cluster layout, hulls and labels draw the groups. */
+  function feedGroups(graph) {
+    const byCategory = new Map();
+    for (const a of graph.accounts) {
+      const k = categoryOf(a);
+      if (!byCategory.has(k)) byCategory.set(k, []);
+      byCategory.get(k).push(a);
+    }
+    const order = Object.keys(CATEGORY);
+    return [...byCategory.entries()]
+      .sort((x, y) => order.indexOf(x[0]) - order.indexOf(y[0]))
+      .map(([group, members], i) => {
+        const id = "group:" + group;
+        members.forEach((a) => (a.clusterId = id));
+        return {
+          id, index: i + 1, group, accountIds: members.map((a) => a.id),
+          averageAutomation: members.reduce((sum, a) => sum + a.automationLikelihood, 0) / members.length,
+          averageCoordination: 0, averageSimilarity: 0, timeSpanSeconds: 0, firstReplySeconds: 0, patterns: [],
+        };
+      });
+  }
+
+  /** The signal labels most common in a group, without their percentages. */
+  function commonSignals(accounts, limit = 4) {
+    const counts = new Map();
+    for (const a of accounts)
+      for (const s of new Set(a.signalsForAutomation.map((x) => x.replace(/\s*\(\d+%\)$/, ""))))
+        counts.set(s, (counts.get(s) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+  }
+
+  function inspectGroups() {
+    skipToEnd();
+    state.path = null;
+    state.focus = null;
+    const groups = [...state.graph.clusters].sort((a, b) => b.accountIds.length - a.accountIds.length);
+    const total = state.graph.accounts.length;
+    openInspector(`
+      <div class="eyebrow">Your feed · post types</div>
+      <h2>Post types</h2>
+      <p class="meta">${total} accounts. Posts in a feed come from unrelated accounts, so they are grouped by what kind of posting they are rather than connected.</p>
+      <div class="neighbors" style="margin-top:12px">${groups
+        .map(
+          (c) =>
+            `<button class="neighbor" data-group="${esc(c.id)}" title="${esc(CATEGORY[c.group][1])}"><span><i class="swatch ${TONE_CLASS[clusterClass(c)]}"></i> ${esc(CATEGORY[c.group][0])}</span><span>${c.accountIds.length} · ${pct(c.accountIds.length / total)}</span></button>`,
+        )
+        .join("")}</div>
+      <p class="meta">accounts · share of the feed</p>
+      <p class="note">Groups describe the content, not who is behind an account. Experimental signals, not proof.</p>`);
+    $$("#inspector [data-group]").forEach((b) => (b.onclick = () => inspectCluster(b.dataset.group)));
+  }
+
+  function inspectGroup(c) {
+    const members = c.accountIds.map((id) => state.accounts.get(id)).sort((a, b) => b.automationLikelihood - a.automationLikelihood);
+    const kind = clusterClass(c);
+    const signals = commonSignals(members);
+    openInspector(`
+      <div class="eyebrow">Post type</div>
+      <h2>${esc(CATEGORY[c.group][0])}</h2>
+      <span class="badge ${kind}">${members.length} account${members.length === 1 ? "" : "s"} · ${pct(members.length / state.graph.accounts.length)} of the feed</span>
+      <p class="meta">${esc(CATEGORY[c.group][1])}</p>
+      ${metric("Average automation likelihood", c.averageAutomation, COLOR[kind])}
+      <h3>Most common signals</h3>${list(signals.map(([s, n]) => `${s} · ${n}`))}
+      <h3>Accounts</h3>
+      <div class="neighbors">${members
+        .map(
+          (a) =>
+            `<button class="neighbor" data-account="${esc(a.id)}" title="${esc(a.replies[0]?.text || "")}"><span>${esc(displayName(a))}</span><span>${pct(a.automationLikelihood)}</span></button>`,
+        )
+        .join("")}</div>
+      <p class="meta">automation likelihood</p>
+      <div class="inspector-actions"><button class="btn ghost" id="all-groups">All post types</button></div>`);
+    $$("#inspector [data-account]").forEach((b) => (b.onclick = () => inspectAccount(b.dataset.account)));
+    $("#all-groups").onclick = inspectGroups;
   }
 
   function replay() {
@@ -1403,22 +1752,18 @@
       primary: id,
     };
     const kind = visualClass(a);
-    const replies = `${a.replyCount} repl${a.replyCount === 1 ? "y" : "ies"} here`;
-    const meta = [];
-    if (a.accountAgeDays != null)
-      meta.push(
-        a.accountAgeDays >= 365
-          ? `${(a.accountAgeDays / 365).toFixed(1)} years old`
-          : `${a.accountAgeDays} days old`,
-      );
-    if (a.followers != null) meta.push(`${fmt(a.followers)} followers`);
-    if (a.following != null) meta.push(`${fmt(a.following)} following`);
-    if (!meta.length) meta.push("account metadata not available");
+    const replies = isFeed()
+      ? `${a.replyCount} post${a.replyCount === 1 ? "" : "s"} in the feed`
+      : `${a.replyCount} repl${a.replyCount === 1 ? "y" : "ies"} here`;
+    if (isFeed()) {
+      inspectFeedAccount(a, kind, meta(a), replies);
+      return;
+    }
     openInspector(`
       <div class="eyebrow">Account</div>
       <h2>${esc(displayName(a))}</h2>
       <span class="badge ${kind}">${LABEL[kind]}</span>
-      <p class="meta">${meta.join(" · ")} · ${replies}</p>
+      <p class="meta">${meta(a).join(" · ")} · ${replies}</p>
       ${a.replies
         .slice(0, 3)
         .map(
@@ -1428,7 +1773,7 @@
         .join("")}
       ${metric("Automation likelihood", a.automationLikelihood, COLOR[kind])}
       ${metric("Coordination likelihood", a.coordinationLikelihood, COLOR.text)}
-      ${metric("Confidence", a.confidence, "#565961")}
+      ${metric("Confidence", a.confidence, "#5a496e")}
       <h3>Signals</h3>${list(a.signalsForAutomation)}
       <h3>Counter-signals</h3>${list(a.signalsAgainstAutomation, "counter")}
       <h3>Coordination</h3>${list(a.coordinationSignals, "coordination")}
@@ -1478,12 +1823,54 @@
     }
   }
 
+  function meta(a) {
+    const parts = [];
+    if (a.accountAgeDays != null)
+      parts.push(
+        a.accountAgeDays >= 365
+          ? `${(a.accountAgeDays / 365).toFixed(1)} years old`
+          : `${a.accountAgeDays} days old`,
+      );
+    if (a.followers != null) parts.push(`${fmt(a.followers)} followers`);
+    if (a.following != null) parts.push(`${fmt(a.following)} following`);
+    if (!parts.length) parts.push("account metadata not available");
+    return parts;
+  }
+
+  /** A feed account: its post type and evidence. Nothing connects feed accounts, so no coordination or paths. */
+  function inspectFeedAccount(a, kind, metaParts, posts) {
+    const group = categoryOf(a);
+    openInspector(`
+      <div class="eyebrow">Account · ${esc(CATEGORY[group][0])}</div>
+      <h2>${esc(displayName(a))}</h2>
+      <span class="badge ${kind}">${LABEL[kind]}</span>
+      <p class="meta">${metaParts.join(" · ")} · ${posts}</p>
+      ${a.replies.slice(0, 3).map((r) => `<div class="quote">${esc(r.text)}${r.duplicate ? "<small>near-duplicate of another post</small>" : ""}</div>`).join("")}
+      <h3>Post type</h3><p class="meta"><b>${esc(CATEGORY[group][0])}</b>: ${esc(CATEGORY[group][1])}</p>
+      ${metric("Automation likelihood", a.automationLikelihood, COLOR[kind])}
+      ${metric("Confidence", a.confidence, "#5a496e")}
+      <h3>Signals</h3>${list(a.signalsForAutomation)}
+      <h3>Counter-signals</h3>${list(a.signalsAgainstAutomation, "counter")}
+      <p class="note">${esc(a.summary)}<br>Source: ${esc(SOURCE_LABEL[a.classificationSource] || a.classificationSource)}.</p>
+      <div class="inspector-actions"><button class="btn ghost" id="open-cluster">All ${esc(CATEGORY[group][0].toLowerCase())}</button></div>`);
+    $("#open-cluster").onclick = () => inspectCluster(a.clusterId);
+    if (EMBED)
+      window.parent.postMessage(
+        { type: "lens:account", accountId: a.id, username: a.username, replyIds: a.replies.map((r) => r.id) },
+        "*",
+      );
+  }
+
   async function inspectCluster(clusterId) {
     const c = state.graph.clusters.find((x) => x.id === clusterId);
     if (!c) return;
     skipToEnd();
     state.path = null;
     state.focus = { kind: "cluster", ids: new Set(c.accountIds), clusterId };
+    if (c.group) {
+      inspectGroup(c);
+      return;
+    }
     const kind = clusterClass(c);
     const humanCoordination = kind === "human_like";
     openInspector(`
@@ -1553,6 +1940,7 @@
 
   const clusterName = (id) => {
     const c = state.graph.clusters.find((x) => x.id === id);
+    if (c?.group) return CATEGORY[c.group][0];
     return c ? `Cluster ${String(c.index).padStart(2, "0")}` : id;
   };
   function formatSeconds(s) {
@@ -1713,7 +2101,7 @@
   });
 
   $("#replay-button").onclick = replay;
-  $("#path-button").onclick = () => (state.pick ? cancelPick() : startPick());
+  $("#path-button").onclick = () => (isFeed() ? inspectGroups() : state.pick ? cancelPick() : startPick());
   $("#inspector-close").onclick = () => clearFocus();
   $("#method-button").onclick = () => $("#method-dialog").showModal();
 
@@ -1781,8 +2169,11 @@
   };
 
   window.addEventListener("message", (e) => {
-    if (e.source !== window.parent || !state.graph) return;
+    if (e.source !== window.parent) return;
     const msg = e.data || {};
+    // Arrives as soon as the frame loads, usually before the graph does.
+    if (msg.type === "lens:hide") state.hiddenGroups = new Set(msg.categories || []);
+    if (!state.graph) return;
     if (msg.type === "lens:inspect") {
       const a = state.graph.accounts.find(
         (x) => x.username.toLowerCase() === String(msg.username).toLowerCase(),
@@ -1849,6 +2240,7 @@
   $("#anon-button").onclick = () => setAnonymized(!state.anon);
   $("#anon-button").setAttribute("aria-pressed", String(state.anon));
   function zoomBy(factor) {
+    if (spatial) { scene3d.zoom(factor); return; }
     if (!cy) return;
     cy.zoom({
       level: clamp(cy.zoom() * factor, 0.4, 3.5),
@@ -1859,6 +2251,7 @@
   $("#zoom-out").onclick = () => zoomBy(1 / 1.2);
   $("#fit-button").onclick = () => {
     clearFocus(false);
+    if (spatial) scene3d.reset();
     if (cy) {
       cy.zoom(1);
       cy.pan({ x: 0, y: 0 });
@@ -1918,24 +2311,24 @@
     canvas.width = 1600;
     canvas.height = 1000;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#0c0c0d";
+    ctx.fillStyle = COLOR.bg;
     ctx.fillRect(0, 0, 1600, 1000);
     ctx.fillStyle = COLOR.accent;
-    ctx.font = "13px 'IBM Plex Mono'";
+    ctx.font = `13px ${FONT.mono}`;
     ctx.fillText("DEAD INTERNET LENS  /  NETWORK OBSERVATORY", 60, 56);
     ctx.fillStyle = COLOR.text;
-    ctx.font = "42px 'Space Grotesk'";
-    ctx.fillText("Beneath the conversation.", 60, 119);
+    ctx.font = `700 42px ${FONT.display}`;
+    ctx.fillText($(".map-heading h1").textContent.trim(), 60, 119);
     const image = new Image();
     image.onload = () => {
       const scale = Math.min(1480 / W, 700 / H),
         x = (1600 - W * scale) / 2,
         y = 165;
-      ctx.drawImage(underlay, x, y, W * scale, H * scale);
+      if (!spatial) ctx.drawImage(underlay, x, y, W * scale, H * scale);
       ctx.drawImage(image, x, y, W * scale, H * scale);
-      ctx.drawImage(overlay, x, y, W * scale, H * scale);
-      ctx.font = "12px 'IBM Plex Mono'";
-      ctx.fillStyle = "#93959f";
+      if (!spatial) ctx.drawImage(overlay, x, y, W * scale, H * scale);
+      ctx.font = `12px ${FONT.mono}`;
+      ctx.fillStyle = "#988da5";
       ctx.fillText($("#network-stats").textContent, 60, 928);
       ctx.fillText(
         $("#source-status").textContent +
@@ -1953,7 +2346,7 @@
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       });
     };
-    image.src = cy.png({ output: "base64uri", scale: dpr });
+    image.src = spatial ? scene3d.snapshot() : cy.png({ output: "base64uri", scale: dpr });
   };
 
   // ---------------------------------------------------------------- live capture of a real X / LinkedIn post

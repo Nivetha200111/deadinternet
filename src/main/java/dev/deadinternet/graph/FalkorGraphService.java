@@ -156,6 +156,7 @@ public class FalkorGraphService {
             row.put("counter", r.signalsAgainstAutomation());
             row.put("coordinationSignals", r.coordinationSignals());
             row.put("summary", r.summary());
+            row.put("category", r.category() == null ? "" : r.category());
             rows.add(row);
         });
         falkor.write(id, """
@@ -165,7 +166,7 @@ public class FalkorGraphService {
                     a.coordinationLikelihood = row.coordination, a.confidence = row.confidence,
                     a.classificationSource = row.source, a.signalsForAutomation = row.signals,
                     a.signalsAgainstAutomation = row.counter, a.coordinationSignals = row.coordinationSignals,
-                    a.summary = row.summary
+                    a.summary = row.summary, a.category = row.category
                 """, Map.of("rows", rows));
     }
 
