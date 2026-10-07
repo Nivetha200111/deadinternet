@@ -1,7 +1,7 @@
 "use strict";
-// Dead Internet Lens content script for X and LinkedIn. Collects the open thread as you scroll (both sites
-// virtualize or lazy-load, so it collects incrementally), hosts the overlay panel, and decorates replies with
-// classification badges. Reading the page is collector.js's job, shared with the server's live capture.
+// Dead Internet Lens content script for X and LinkedIn. Collects the open thread, or the posts on a feed, profile or
+// search page, as you scroll (both sites virtualize or lazy-load, so it collects incrementally), hosts the overlay
+// panel, and decorates replies and posts with classification badges. Reading the page is collector.js's job, shared with the server's live capture.
 (() => {
   if (window.__deadInternetLens) return;
   window.__deadInternetLens = true;
@@ -10,13 +10,18 @@
   const site = Collector.detect();
   if (!site) return;
   const MAX_REPLIES = 400;
+  // The server accepts up to 5000 characters per post; X Premium posts can be much longer.
+  const MAX_TEXT = 5000;
   // ------------------------------------------------------------------ shared state
   const PANEL_URL = chrome.runtime.getURL("panel.html");
   const PANEL_ORIGIN = new URL(PANEL_URL).origin;
   const state = {
+    // "thread": a single post and its replies. "posts": the posts on a feed, profile or search page.
+    mode: null,
+    pageKey: null, // thread:<id> or posts:<path>; a change resets what was collected
     threadId: null,
     post: null,
-    replies: new Map(), // reply id -> { id, handle, text, createdAt }
+    replies: new Map(), // reply (or post, in posts mode) id -> { id, handle, text, createdAt }
     skipped: new Set(), // replies without text (media-only); they can't be compared
     results: new Map(), // reply id -> badge info, after analysis
     panel: null,
@@ -26,14 +31,24 @@
   };
 
   // ------------------------------------------------------------------ reading the thread
-  function collect() {
+  function pageKey() {
     const threadId = site.threadId();
-    if (threadId !== state.threadId) reset(threadId);
-    if (!threadId) return;
-    const { post, replies } = Collector.scan(site);
-    // Keep the first good read of the post; it can scroll out of the DOM later.
-    if (post && (!state.post || (!state.post.text && post.text))) state.post = post;
-    for (const reply of replies) {
+    return threadId ? `thread:${threadId}` : `posts:${location.pathname}`;
+  }
+
+  function collect() {
+    const key = pageKey();
+    if (key !== state.pageKey) reset(key);
+    let items;
+    if (state.mode === "thread") {
+      const { post, replies } = Collector.scan(site);
+      // Keep the first good read of the post; it can scroll out of the DOM later.
+      if (post && (!state.post || (!state.post.text && post.text))) state.post = post;
+      items = replies;
+    } else {
+      items = Collector.scanPosts(site)?.items ?? [];
+    }
+    for (const reply of items) {
       if (state.replies.has(reply.id) || state.replies.size >= MAX_REPLIES)
         continue;
       if (!reply.text) {
@@ -44,7 +59,7 @@
       state.replies.set(reply.id, {
         id: reply.id,
         handle: reply.handle,
-        text: reply.text,
+        text: reply.text.slice(0, MAX_TEXT),
         createdAt: reply.createdAt,
       });
     }
@@ -53,9 +68,11 @@
     sendCollected();
   }
 
-  function reset(threadId) {
+  function reset(key) {
     stopAutoCollect();
-    state.threadId = threadId;
+    state.pageKey = key;
+    state.mode = key.startsWith("thread:") ? "thread" : "posts";
+    state.threadId = state.mode === "thread" ? key.slice("thread:".length) : null;
     state.post = null;
     state.replies.clear();
     state.skipped.clear();
@@ -65,12 +82,13 @@
   }
 
   function conversation() {
+    if (state.mode === "posts") return postsConversation();
     const post = state.post;
     return {
       post: {
         id: post.id,
         author: post.handle,
-        text: post.text || "(post without text)",
+        text: (post.text || "(post without text)").slice(0, MAX_TEXT),
         createdAt: post.createdAt,
       },
       replies: [...state.replies.values()].map((r) => ({
@@ -78,6 +96,31 @@
         author: { id: r.handle.toLowerCase(), username: r.handle },
         text: r.text,
         createdAt: r.createdAt,
+      })),
+    };
+  }
+
+  // Posts hang off a synthetic root that stands for the page, as in the server's feed capture (CapturedFeed).
+  function postsConversation() {
+    const posts = [...state.replies.values()];
+    const oldest = Math.min(...posts.map((p) => Date.parse(p.createdAt)));
+    const accounts = new Set(posts.map((p) => p.handle.toLowerCase())).size;
+    const where = /^\/(home|feed(\/[a-z-]+)?)?\/?$/.test(location.pathname)
+      ? `your ${site.name} feed`
+      : `${site.name} ${location.pathname}`;
+    return {
+      kind: "feed",
+      post: {
+        id: `feed-${Math.floor(Date.now() / 1000)}`,
+        author: where.slice(0, 100),
+        text: `Posts on ${where}: ${posts.length} posts from ${accounts} accounts, collected ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`,
+        createdAt: new Date(oldest - 1000).toISOString(),
+      },
+      replies: posts.map((p) => ({
+        id: p.id,
+        author: { id: p.handle.toLowerCase(), username: p.handle },
+        text: p.text,
+        createdAt: p.createdAt,
       })),
     };
   }
@@ -93,7 +136,7 @@
   }).observe(document.body, { childList: true, subtree: true });
   // Both sites are single-page apps; also notice navigation that doesn't mutate the thread.
   setInterval(() => {
-    if (site.threadId() !== state.threadId) collect();
+    if (pageKey() !== state.pageKey) collect();
   }, 800);
 
   // ------------------------------------------------------------------ auto-collect
@@ -103,8 +146,8 @@
     let idle = 0,
       last = -1;
     state.collecting = setInterval(() => {
-      Collector.clickMore(site);
-      window.scrollBy({ top: window.innerHeight * 0.85, behavior: "smooth" });
+      if (state.mode === "thread") Collector.clickMore(site);
+      Collector.scrollDown();
       collect();
       idle = state.replies.size === last ? idle + 1 : 0;
       last = state.replies.size;
@@ -141,17 +184,22 @@
   document.body.appendChild(launcher);
 
   function updateLauncher() {
-    launcher.hidden =
-      !state.threadId || Boolean(state.panel && !state.panel.hidden);
     const n = state.replies.size;
+    // On a feed the launcher appears once there is something to analyze; on a thread, right away.
+    launcher.hidden =
+      (state.mode === "posts" && !n) || Boolean(state.panel && !state.panel.hidden);
     const word =
-      site.name === "LinkedIn"
+      state.mode === "posts"
         ? n === 1
-          ? "comment"
-          : "comments"
-        : n === 1
-          ? "reply"
-          : "replies";
+          ? "post"
+          : "posts"
+        : site.name === "LinkedIn"
+          ? n === 1
+            ? "comment"
+            : "comments"
+          : n === 1
+            ? "reply"
+            : "replies";
     launcher.querySelector("span").textContent = `Lens · ${n} ${word}`;
   }
 
@@ -185,8 +233,9 @@
     toPanel({
       type: "collected",
       site: site.name,
+      mode: state.mode,
       threadId: state.threadId,
-      hasPost: Boolean(state.post),
+      hasPost: state.mode === "posts" || Boolean(state.post),
       count: state.replies.size,
       skipped: state.skipped.size,
       max: MAX_REPLIES,
@@ -209,7 +258,13 @@
         break;
       case "requestConversation":
         collect();
-        if (!state.post)
+        if (state.mode === "posts" && !state.replies.size)
+          toPanel({
+            type: "error",
+            message:
+              "No posts with text on this page yet. Scroll the page or use Auto-collect.",
+          });
+        else if (state.mode === "thread" && !state.post)
           toPanel({
             type: "error",
             message: `Open a single post on ${site.name} so the original post is on the page.`,

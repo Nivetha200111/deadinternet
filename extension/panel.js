@@ -59,9 +59,13 @@
 
   function renderCollected(c) {
     state.collected = c;
+    const posts = c.mode === "posts";
     $("#count").textContent = c.count;
-    const noun =
-      c.site === "LinkedIn"
+    const noun = posts
+      ? c.count === 1
+        ? "post"
+        : "posts"
+      : c.site === "LinkedIn"
         ? c.count === 1
           ? "comment"
           : "comments"
@@ -70,7 +74,14 @@
           : "replies";
     $("#count-label").textContent = `${noun} collected`;
     const notes = [];
-    if (!c.threadId) notes.push(`Open a single post on ${c.site} to start.`);
+    if (posts)
+      notes.push(
+        c.count >= c.max
+          ? `Limit of ${c.max} reached.`
+          : c.count
+            ? "Scroll to load more posts, or open a single post to analyze its replies."
+            : `Scroll your ${c.site} feed, a profile or search results to collect posts.`,
+      );
     else if (!c.hasPost)
       notes.push("Scroll to the top so the original post is on the page.");
     else
@@ -82,8 +93,12 @@
     if (c.skipped) notes.push(`${c.skipped} media-only skipped.`);
     $("#count-note").textContent = notes.join(" ");
     $("#auto").textContent = c.collecting ? "Stop" : "Auto-collect";
+    $("#auto").title = posts
+      ? "Scroll the page to collect more posts"
+      : "Scroll the thread and open hidden reply sections";
     $("#auto").classList.toggle("active", c.collecting);
-    $("#auto").disabled = !c.threadId;
+    $("#auto").disabled = !c.mode;
+    $("#analyze").textContent = posts ? "Analyze posts" : "Analyze thread";
     $("#analyze").disabled = !c.hasPost || !c.count;
   }
 
@@ -165,7 +180,7 @@
       if (msg.type === "error") showMessage(msg.message, true);
       if (msg.type === "notOnPage")
         showMessage(
-          "That reply isn't loaded on the page right now. Scroll the thread to bring it back.",
+          `That ${state.collected?.mode === "posts" ? "post" : "reply"} isn't loaded on the page right now. Scroll to bring it back.`,
         );
       if (msg.type === "inspect" && state.appFrame)
         state.appFrame.contentWindow.postMessage(

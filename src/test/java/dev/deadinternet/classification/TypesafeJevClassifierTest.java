@@ -32,7 +32,9 @@ class TypesafeJevClassifierTest {
               "repetition":{"type":"noul","noul":0.9},
               "timing":{"type":"noul","noul":0.2},
               "individuality":{"type":"noul","noul":0.8},
-              "sharedPattern":{"type":"noul","noul":0.95}
+              "sharedPattern":{"type":"noul","noul":0.95},
+              "aiGenerated":{"type":"noul","noul":0.3},
+              "engagementBait":{"type":"noul","noul":0.64}
             },"usage":{"input_tokens":120,"output_tokens":12}}
             """;
 
@@ -75,13 +77,17 @@ class TypesafeJevClassifierTest {
         assertThat(sent.path("state").path("features").path("maxTextSimilarity").asDouble()).isEqualTo(0.94);
         assertThat(sent.path("questions").path("automation").path("type").asText()).isEqualTo("choice");
         assertThat(sent.path("questions").path("coordination").path("type").asText()).isEqualTo("noul");
+        assertThat(sent.path("questions").path("aiGenerated").path("type").asText()).isEqualTo("noul");
+        assertThat(sent.path("questions").path("engagementBait").path("type").asText()).isEqualTo("noul");
         assertThat(auth.get()).isEqualTo("Bearer test-token");
         assertThat(result.source()).isEqualTo(ClassificationSource.JEV);
         assertThat(result.classification()).isEqualTo(Classification.AUTOMATION_LIKE);
         assertThat(result.automationLikelihood()).isEqualTo(0.83);
         assertThat(result.coordinationLikelihood()).isEqualTo(0.91);
         assertThat(result.confidence()).isEqualTo(0.79);
-        assertThat(result.signalsForAutomation()).containsExactly("JEV identifies templated or near-duplicate language");
+        assertThat(result.signalsForAutomation()).containsExactly(
+                "JEV: spam, scam or engagement-bait content (64%)",
+                "JEV identifies templated or near-duplicate language");
         assertThat(result.signalsAgainstAutomation()).hasSize(1);
         assertThat(result.coordinationSignals()).hasSize(1);
     }
@@ -93,7 +99,7 @@ class TypesafeJevClassifierTest {
         var answers = (com.fasterxml.jackson.databind.node.ObjectNode) response.path("answers");
         var coordination = (com.fasterxml.jackson.databind.node.ObjectNode) answers.path("coordination");
         switch (kind) {
-            case "missing" -> answers.remove("individuality");
+            case "missing" -> answers.remove("engagementBait");
             case "wrongType" -> coordination.put("type", "score");
             case "range" -> coordination.put("noul", 1.1);
             case "string" -> coordination.put("noul", "0.9");

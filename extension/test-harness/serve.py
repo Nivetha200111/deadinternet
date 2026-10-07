@@ -1,9 +1,11 @@
 """Test harness: serves the fixtures at X-/LinkedIn-like URLs with a stub of the chrome extension API, the extension
 files at /ext/, and proxies everything else to the Lens server on :8080, so the whole overlay runs in a plain tab.
 """
-import http.server, urllib.request, pathlib, re
+import http.server, urllib.request, pathlib, re, os
 HERE = pathlib.Path(__file__).resolve().parent
 EXT = HERE.parent
+# LENS_SERVER points the proxy at another Lens server, e.g. a second instance running with the local heuristic.
+LENS = os.environ.get('LENS_SERVER', 'http://localhost:8080')
 FIXTURE = HERE / 'x.html'
 LINKEDIN = HERE / 'linkedin.html'
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -12,7 +14,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _proxy(self):
         length = int(self.headers.get('Content-Length') or 0)
         data = self.rfile.read(length) if length else None
-        req = urllib.request.Request('http://localhost:8080' + self.path, data=data, method=self.command,
+        req = urllib.request.Request(LENS + self.path, data=data, method=self.command,
                                      headers={'Content-Type': self.headers.get('Content-Type', 'application/json')})
         try:
             with urllib.request.urlopen(req) as r: self._send(r.status, r.read(), r.headers.get('Content-Type', 'text/plain'))

@@ -74,10 +74,11 @@
   const LINKEDIN = {
     name: "LinkedIn",
     hosts: /(^|\.)linkedin\.com$/,
-    isFeed: () => /^\/feed\/?$/.test(location.pathname),
+    // /feed/ in the old layout; /feed/foryou/ (and other tabs) since the 2026 redesign.
+    isFeed: () => /^\/feed(\/[a-z-]+)?\/?$/.test(location.pathname),
     scanFeed() {
       const CARD = '[data-urn^="urn:li:activity:"], [data-urn^="urn:li:ugcPost:"]';
-      const items = [];
+      const items = LINKEDIN.scanRedesignedFeed();
       for (const el of document.querySelectorAll(CARD)) {
         // Cards can nest (a repost wraps the original); read only the outermost.
         if (el.parentElement?.closest(CARD)) continue;
@@ -92,6 +93,23 @@
         // Promoted cards carry no activity id or no author profile link.
         if (!id || !handle) continue;
         items.push({ el, id, handle, text: textEl ? textEl.innerText.trim() : "", createdAt: linkedInTime(id, null) });
+      }
+      return items;
+    },
+    /**
+     * The redesigned feed has no activity ids, timestamps or stable class names. Each post is a list item whose
+     * componentkey carries an opaque per-post key, and its text is the first expandable-text-box.
+     */
+    scanRedesignedFeed() {
+      const items = [];
+      for (const el of document.querySelectorAll(REDESIGNED_CARD)) {
+        const key = el.getAttribute("componentkey").slice("update-card-focus".length).replace(/[^\w-]/g, "");
+        const header = redesignedHeader(el);
+        if (!key || header.promoted) continue;
+        const handle = linkedInHandle(header.author?.getAttribute("href"));
+        if (!handle) continue;
+        const textEl = el.querySelector('[data-testid="expandable-text-box"]');
+        items.push({ el, id: `li-${key}`.slice(0, 100), handle, text: textEl ? textEl.innerText.trim() : "", createdAt: linkedInTime(null, header.relativeTime) });
       }
       return items;
     },
@@ -163,6 +181,7 @@
     },
     badgeAnchor: (el) => {
       const COMMENT = '[data-id^="urn:li:comment:"]';
+      if (el.matches(REDESIGNED_CARD)) return redesignedHeader(el).author?.parentElement ?? null;
       if (!el.matches(COMMENT)) {
         return el.querySelector(".update-components-actor__meta, .update-components-actor__title, .update-components-actor__container");
       }
@@ -173,6 +192,33 @@
       ].find((a) => ownedBy(a, el, COMMENT));
     },
   };
+
+  const REDESIGNED_CARD = '[role="listitem"][componentkey^="update-card-focus"]';
+  const SOCIAL_CONTEXT = /(likes?|loves?|celebrates?|supports?|finds this|commented on|reposted|follows?) (this|that)?/i;
+
+  /**
+   * Reads the header above a redesigned card's text: the author is the first named profile link, after any
+   * "X likes this" / "X reposted this" line naming someone else.
+   */
+  function redesignedHeader(card) {
+    const text = card.querySelector('[data-testid="expandable-text-box"]');
+    const above = (node) => !text || Boolean(node.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const leaves = [...card.querySelectorAll("span, p, div, a")].filter(
+      (e) => e.childElementCount === 0 && above(e) && e.textContent.trim(),
+    );
+    const context = leaves.find((e) => SOCIAL_CONTEXT.test(e.textContent) && e.textContent.trim().length < 120);
+    const author = [...card.querySelectorAll('a[href*="/in/"], a[href*="/company/"]')].find(
+      (a) =>
+        above(a) &&
+        a.innerText.trim() &&
+        !(context && (a.contains(context) || context.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING)),
+    );
+    return {
+      author,
+      promoted: leaves.some((e) => /^(Promoted|Sponsored)$/i.test(e.textContent.trim())),
+      relativeTime: leaves.map((e) => e.textContent.trim()).find((t) => /^\d+\s*(s|m|h|d|w|mo|yr)/i.test(t)) ?? null,
+    };
+  }
 
   /** /in/jane-doe-1a2b/ → jane-doe-1a2b; /company/acme/ → company-acme */
   function linkedInHandle(href) {
@@ -188,7 +234,7 @@
    * Falls back to the relative label ("3h", "2d", "1w", "4mo", "1yr"), which is only approximate.
    */
   function linkedInTime(id, relative) {
-    try {
+    if (id) try {
       const ms = Number(BigInt(id) >> 22n);
       if (ms > Date.UTC(2012, 0, 1) && ms < Date.now() + 86400000)
         return new Date(ms).toISOString();
@@ -197,7 +243,7 @@
     }
     const m = String(relative || "")
       .trim()
-      .match(/^(\d+)\s*(s|m|h|d|w|mo|yr|y)/i);
+      .match(/^(\d+)\s*(mo|yr|s|m|h|d|w|y)/i);
     const unit = {
       s: 1,
       m: 60,
@@ -243,10 +289,37 @@
   /** Reads every post currently rendered in a home feed, tagging each element for badges. */
   function scanFeed(site = detect()) {
     if (!site || !site.isFeed()) return null;
+    return scanPosts(site);
+  }
+
+  /** Like scanFeed, but on any page that lists posts (feed, profile, search), not only the home feed. */
+  function scanPosts(site = detect()) {
+    if (!site) return null;
     const plain = (item) => ({ id: item.id, handle: item.handle, text: item.text, createdAt: item.createdAt });
     const items = site.scanFeed();
     items.forEach((i) => (i.el.dataset.dilItem = i.id));
     return { site: site.name, items: items.map(plain) };
+  }
+
+  /**
+   * Scrolls the feed or thread down by most of a screen. LinkedIn's redesign scrolls an inner container (main#workspace)
+   * rather than the window, so this scrolls whichever ancestor of the posts actually scrolls.
+   */
+  function scrollDown() {
+    const root = document.scrollingElement || document.documentElement;
+    const scrollable = (el) =>
+      el.scrollHeight > el.clientHeight + 50 && /(auto|scroll)/.test(getComputedStyle(el).overflowY);
+    let target = null;
+    if (root.scrollHeight <= root.clientHeight + 50) {
+      for (let el = document.querySelector("[data-dil-item]") || document.querySelector("main"); el && el !== root; el = el.parentElement) {
+        if (scrollable(el)) {
+          target = el;
+          break;
+        }
+      }
+    }
+    const top = (target ? target.clientHeight : innerHeight) * 0.85;
+    (target || window).scrollBy({ top, behavior: "smooth" });
   }
 
   /** Opens "show more replies" / "load more comments" sections; returns how many it clicked. */
@@ -311,5 +384,5 @@
     return true;
   }
 
-  window.DeadInternetLensCollector = { detect, scan, scanFeed, clickMore, decorate, clearBadges, scrollToReplies, ADAPTERS };
+  window.DeadInternetLensCollector = { detect, scan, scanFeed, scanPosts, scrollDown, clickMore, decorate, clearBadges, scrollToReplies, ADAPTERS };
 })();
