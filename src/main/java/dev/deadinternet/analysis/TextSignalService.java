@@ -66,6 +66,35 @@ public class TextSignalService {
             "wonderful", "keep", "going", "work", "congrats", "congratulations", "indeed", "interesting", "article",
             "read", "always", "truly", "message", "words", "wise", "needed", "hear", "today", "make", "makes", "sense",
             "couldn't", "more", "with", "what", "your", "have", "been", "here", "there", "these", "those", "think");
+    /** Life and career updates: congratulations, certifications, new jobs, promotions, anniversaries. */
+    private static final Pattern MILESTONE = Pattern.compile("(\\b((happy|excited|thrilled|pleased|proud|delighted|honou?red|grateful)"
+            + " to (share|announce)|starting a new (position|role|job|chapter)|new (position|role|job) (as|at)"
+            + "|i'?ve (just )?(joined|accepted)|(joined|joining) [^.\\n]{0,40}\\bas (an? )?|work anniversary"
+            + "|celebrating \\d+ years?|got promoted|promoted to|(earned|obtained|completed|received|achieved|passed|cleared)"
+            + " (my |the |a |an )?[^.\\n]{0,50}(certification|certificate|certified|exam|degree|course)"
+            + "|congratulations|congrats|graduated|new beginnings)\\b|#(certification|certified|newjob|newrole|newposition"
+            + "|careergrowth|workanniversary|promotion|graduation)\\b)", Pattern.CASE_INSENSITIVE);
+    /** Sales calls to action. */
+    private static final Pattern PROMOTION = Pattern.compile("(\\b((book|schedule) (a|your) (free )?(call|demo|meeting|session)"
+            + "|sign up|register (now|here|today)|enrol+(ment)? (now|today|open)|enrol+ (in|for)|link in (the )?(first )?comments?"
+            + "|limited (seats|spots|slots)|use (the )?code|buy now|shop now|order now|pre-?order|get (yours|your copy|it now)"
+            + "|free (webinar|trial|guide|e-?book|masterclass|workshop|template|checklist|audit)"
+            + "|join (my|our) (newsletter|course|cohort|community|program|bootcamp|webinar)"
+            + "|check out (my|our) (new )?(course|product|tool|app|service|book)|(dm|message) me (\"\\w+\"|to (get|learn|join)|for (details|the link))"
+            + "|comment \"\\w+\" (below )?(and|&) i'?ll|vote for (us|our)|your vote|(we'?re|we are) (launching|live)"
+            + "|launch(ed|ing) (our|my)|(our|my) (startup|company|product|platform|app|team) (is|goes|will|just)"
+            + "|come (visit|see|meet) us|visit (us|our booth)|our booth|startup pitch|pitch (day|parade|competition)"
+            + "|now available|available now|waitlist|early access|request a demo|free consultation)\\b|\\b\\d{1,2}% off\\b)", Pattern.CASE_INSENSITIVE);
+    /** Phrasing AI models overuse. Several together, not one, point to AI-written text. */
+    private static final Pattern AI_STYLE = Pattern.compile("(\\b(delve|game[- ]changer|in today'?s (fast[- ]paced|digital"
+            + "|ever[- ]evolving|competitive)|ever[- ]evolving|unlock(ing)? (the|your)|let'?s dive in|here'?s the thing"
+            + "|navigat(e|ing) the (complexities|landscape)|seamless(ly)?|tapestry|elevate your|harness(ing)? the power"
+            + "|embark|in conclusion|key takeaways?|it'?s not just about|isn'?t just|the real magic|a testament to"
+            + "|plays a (crucial|pivotal) role|crucial|pivotal|transformative|empower(ing)?|foster(ing)?|leverag(e|ing)"
+            + "|supercharge|actionable insights?|thought leadership)\\b|—|[✅🚀💡👉🔑📌✨🔥⚡🎯])", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STEPS = Pattern.compile("(^\\s*(\\d+[.)]|step \\d+)|\\bhow to\\b|\\d+(\\.\\d+)?\\s?(%|ms|gb|mb|x\\b))",
+            Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+    private static final Pattern HASHTAG = Pattern.compile("(?<![\\w#])#[\\p{L}\\p{N}_]{2,}");
     private static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}']+");
 
     /**
@@ -87,7 +116,9 @@ public class TextSignalService {
                 count(URL, all), matches(SHORTENER, all), matches(MESSAGING, all), matches(CRYPTO, all),
                 count(MENTION, all), letters < 20 ? 0 : round(upper / (double) letters), THREAD_HOOK.matcher(all).find(),
                 overlap == null ? null : round(overlap), matches(MONEY, all), matches(JOB, all), matches(ADULT, all),
-                matches(FOLLOW, all), !texts.isEmpty() && texts.stream().allMatch(TextSignalService::isGenericPraise));
+                matches(FOLLOW, all), !texts.isEmpty() && texts.stream().allMatch(TextSignalService::isGenericPraise),
+                matches(MILESTONE, all), matches(PROMOTION, all), matches(AI_STYLE, all), count(HASHTAG, all),
+                words >= 60 && count(STEPS, all) >= 2);
     }
 
     /**

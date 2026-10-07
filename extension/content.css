@@ -6,6 +6,7 @@
   src: url("chrome-extension://__MSG_@@extension_id__/fonts/fragment-mono.woff2") format("woff2");
 }
 /* Everything is prefixed dil- (Dead Internet Lens) to stay clear of X's own styles. */
+/* Minimized: a small round icon with the post count, draggable anywhere. */
 .dil-launcher {
   position: fixed;
   right: 20px;
@@ -13,8 +14,13 @@
   z-index: 2147483000;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 17px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  touch-action: none;
+  user-select: none;
   border-radius: 999px;
   background: #171020ed;
   color: #f4f1f8;
@@ -25,8 +31,11 @@
     ui-monospace,
     monospace;
   letter-spacing: 0.02em;
-  cursor: pointer;
+  cursor: grab;
   backdrop-filter: blur(8px);
+}
+.dil-launcher:active {
+  cursor: grabbing;
 }
 .dil-launcher:hover {
   border-color: #968aa3;

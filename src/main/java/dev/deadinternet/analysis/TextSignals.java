@@ -19,13 +19,21 @@ import java.util.List;
  * @param adultLures        "check my bio", "lonely tonight", 🔞
  * @param followFarming     "follow for follow", "#F4F", "gain 1000 followers"
  * @param genericPraise     the whole text is interchangeable praise ("Great insights! Thanks for sharing")
+ * @param milestones        congratulations, certifications, new jobs and work anniversaries
+ * @param promotions        sales calls to action: "book a call", "link in comments", "50% off", "enroll now"
+ * @param aiStyle           phrasing typical of AI-written posts: "delve", "game-changer", "in today's fast-paced"
+ * @param hashtags          number of hashtags; promotional posts stack them
+ * @param substantive       long enough and specific enough (numbers, steps, how-to) to teach a reader something
  */
 public record TextSignals(int emojis, double emojiDensity, List<String> urgencyTerms, int links,
                           List<String> shortenedLinks, List<String> messagingContacts, List<String> cryptoTerms,
                           int mentions, double uppercaseRatio, boolean threadHook, Double parentOverlap,
                           List<String> moneyClaims, List<String> jobLures, List<String> adultLures,
-                          List<String> followFarming, boolean genericPraise) {
+                          List<String> followFarming, boolean genericPraise,
+                          List<String> milestones, List<String> promotions, List<String> aiStyle,
+                          int hashtags, boolean substantive) {
 
     public static final TextSignals NONE = new TextSignals(0, 0, List.of(), 0, List.of(), List.of(), List.of(), 0, 0,
-            false, null, List.of(), List.of(), List.of(), List.of(), false);
+            false, null, List.of(), List.of(), List.of(), List.of(), false,
+            List.of(), List.of(), List.of(), 0, false);
 }

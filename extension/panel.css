@@ -117,6 +117,7 @@ button.active {
   display: flex;
   gap: 6px;
 }
+#minimize,
 #close {
   font-size: 17px;
   line-height: 1;

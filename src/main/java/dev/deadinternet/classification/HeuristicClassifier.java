@@ -133,15 +133,21 @@ public class HeuristicClassifier implements JevClassifier {
      * Scores the spam markers phishing replies, airdrop scams, engagement bait and affiliate spam leave in the text,
      * adding each one found to {@code signals}. An off-platform contact plus pressure language reaches automation-like.
      */
-    /** Human-like accounts are personal posts; otherwise the most serious recognizable pattern names the group. */
+    /**
+     * Scams first; then milestones, ads and AI-styled posts, which people write too; then human-like accounts are
+     * personal posts; otherwise the most serious recognizable pattern names the group.
+     */
     static String category(TextSignals t, Classification label) {
-        if (label == Classification.HUMAN_LIKE) return PostCategory.PERSONAL;
         boolean strongAdult = t.adultLures().stream().anyMatch(l -> !TextSignalService.BIO_POINTERS.contains(l));
         boolean pointedMoney = !t.moneyClaims().isEmpty() && (t.mentions() > 0 || !t.messagingContacts().isEmpty());
         boolean job = t.jobLures().size() >= 2 || (!t.jobLures().isEmpty() && !t.messagingContacts().isEmpty());
-        if (!t.messagingContacts().isEmpty() || t.cryptoTerms().size() >= 2 || strongAdult || pointedMoney || job) {
-            return PostCategory.SCAM;
-        }
+        boolean scam = !t.messagingContacts().isEmpty() || t.cryptoTerms().size() >= 2 || strongAdult || pointedMoney || job;
+        if (scam && label != Classification.HUMAN_LIKE) return PostCategory.SCAM;
+        if (!t.milestones().isEmpty()) return PostCategory.MILESTONE;
+        if (t.promotions().size() >= 2
+                || (!t.promotions().isEmpty() && (t.aiStyle().size() >= 2 || t.hashtags() >= 3))) return PostCategory.AI_AD;
+        if (t.aiStyle().size() >= 3) return t.substantive() ? PostCategory.AI_USEFUL : PostCategory.AI_LOW_VALUE;
+        if (label == Classification.HUMAN_LIKE) return PostCategory.PERSONAL;
         if (!t.followFarming().isEmpty()) return PostCategory.FOLLOW_FARMING;
         if (t.genericPraise()) return PostCategory.GENERIC_COMMENT;
         if (t.threadHook()) return PostCategory.ENGAGEMENT_BAIT;

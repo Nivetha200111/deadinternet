@@ -41,6 +41,7 @@ class TypesafeJevClassifierTest {
               "tooLittleText":{"type":"noul","noul":0.1},
               "promotional":{"type":"noul","noul":0.1},
               "informative":{"type":"noul","noul":0.2},
+              "milestone":{"type":"noul","noul":0.1},
               "spamType":{"type":"choice","choice":"none","confidence":0.9,"probabilities":{"none":0.9,
                 "reply_phishing":0.01,"airdrop_scam":0.01,"investment_scam":0.01,"recovery_scam":0.01,"job_scam":0.01,
                 "adult_spam":0.01,"affiliate_spam":0.01,"engagement_bait":0.01,"follow_farming":0.01,

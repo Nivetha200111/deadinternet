@@ -105,6 +105,20 @@ class HeuristicClassifierTest {
     }
 
     @Test
+    void milestonesAdsAndAiStyledPostsGetTheirOwnGroups() {
+        assertThat(classifier.classify(withText("Happy to share that I'm starting a new position as Data Analyst at Acme!"))
+                .category()).isEqualTo(PostCategory.MILESTONE);
+        assertThat(classifier.classify(withText("I've earned my AWS Solutions Architect certification #certification"))
+                .category()).isEqualTo(PostCategory.MILESTONE);
+        assertThat(classifier.classify(withText("Startup life. Today: Startup Pitch Parade. Looking forward to a packed "
+                + "tent and your vote! #FastCodeAI #Gruenderwasen #StartupStuttgart #IndustrialAI")).category())
+                .isEqualTo(PostCategory.AI_AD);
+        assertThat(classifier.classify(withText("In today's fast-paced world, leadership is a game-changer. "
+                + "It's not just about results — it's about empowering people to elevate your team. 🚀")).category())
+                .isEqualTo(PostCategory.AI_LOW_VALUE);
+    }
+
+    @Test
     void researchedLookAlikesStayHumanLike() {
         for (String ordinary : java.util.List.of(
                 "Sold 200 cookies at the school fair and made $340, the kids were thrilled.",

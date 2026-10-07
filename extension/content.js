@@ -200,8 +200,51 @@
   launcher.className = "dil-launcher";
   launcher.hidden = true;
   launcher.innerHTML = "<i></i><span></span>";
-  launcher.addEventListener("click", openPanel);
+  launcher.addEventListener("click", (e) => {
+    // A drag ends in a click; only a click that didn't move opens the panel.
+    if (launcher.dataset.dragged) {
+      delete launcher.dataset.dragged;
+      e.preventDefault();
+      return;
+    }
+    openPanel();
+  });
   document.body.appendChild(launcher);
+  makeDraggable();
+
+  /** The minimized icon can be dragged anywhere; the panel remembers where. */
+  function makeDraggable() {
+    let start = null;
+    launcher.addEventListener("pointerdown", (e) => {
+      const r = launcher.getBoundingClientRect();
+      start = { x: e.clientX, y: e.clientY, left: r.left, top: r.top, moved: false };
+      launcher.setPointerCapture(e.pointerId);
+    });
+    launcher.addEventListener("pointermove", (e) => {
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (!start.moved && Math.hypot(dx, dy) < 5) return;
+      start.moved = true;
+      placeLauncher({ left: start.left + dx, top: start.top + dy });
+    });
+    launcher.addEventListener("pointerup", () => {
+      if (start?.moved) {
+        launcher.dataset.dragged = "1";
+        toPanel({ type: "launcherPos", pos: state.launcherPos });
+      }
+      start = null;
+    });
+    addEventListener("resize", () => state.launcherPos && placeLauncher(state.launcherPos));
+  }
+
+  function placeLauncher(pos) {
+    if (!pos) return;
+    const left = Math.max(4, Math.min(innerWidth - launcher.offsetWidth - 4, pos.left));
+    const top = Math.max(4, Math.min(innerHeight - launcher.offsetHeight - 4, pos.top));
+    state.launcherPos = { left: Math.round(left), top: Math.round(top) };
+    Object.assign(launcher.style, { left: `${left}px`, top: `${top}px`, right: "auto", bottom: "auto" });
+  }
 
   function updateLauncher() {
     const n = state.replies.size;
@@ -220,7 +263,9 @@
           : n === 1
             ? "reply"
             : "replies";
-    launcher.querySelector("span").textContent = `Lens · ${n} ${word}`;
+    launcher.querySelector("span").textContent = String(n);
+    launcher.title = `Dead Internet Lens · ${n} ${word}. Click to open, drag to move.`;
+    launcher.setAttribute("aria-label", launcher.title);
   }
 
   // The panel loads hidden with the page, so it can analyze posts as they appear before anyone opens it.
@@ -315,6 +360,11 @@
       case "ready":
         state.panelReady = true;
         if (msg.dockWidth) setDockWidth(msg.dockWidth);
+        if (msg.launcherPos) {
+          state.launcherPos = msg.launcherPos;
+          // Measured once visible; until then keep the saved spot.
+          Object.assign(launcher.style, { left: `${msg.launcherPos.left}px`, top: `${msg.launcherPos.top}px`, right: "auto", bottom: "auto" });
+        }
         toPanel({ type: "visible", value: !state.panel.hidden });
         sendCollected();
         break;

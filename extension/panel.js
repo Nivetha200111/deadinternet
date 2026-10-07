@@ -24,8 +24,10 @@
     autoTimer: null,
     pendingGraph: null, // an analysis whose graph isn't shown yet
   };
-  // New posts wait this long for more to arrive, so scrolling sends one analysis instead of many.
-  const AUTO_DELAY_MS = 2500;
+  // New posts wait this long for more to arrive, so scrolling sends one analysis instead of many; never longer than
+  // AUTO_MAX_WAIT_MS, so steady scrolling still gets analyzed.
+  const AUTO_DELAY_MS = 2000;
+  const AUTO_MAX_WAIT_MS = 6000;
 
   // Post types the reader can fold away. Personal posts, mixed signals and too-little-text posts are never hidden:
   // they are either fine or can't be judged. Defaults hide only the clear-cut, high-confidence types.
@@ -35,7 +37,8 @@
     ["follow_farming", "Follower farming", true],
     ["generic_comment", "Generic comments", true],
     ["content_farm", "Content farms", false],
-    ["ai_ad", "AI ads", true],
+    ["ai_ad", "Ads", true],
+    ["milestone", "Congrats & new jobs", false],
     ["ai_low_value", "Low-value AI", true],
     ["ai_useful", "Useful AI", false],
     ["ai_written", "AI-written", false],
@@ -52,7 +55,7 @@
     try {
       const saved = JSON.parse(localStorage.getItem("dil-clean") || "null");
       return saved && Array.isArray(saved.hide)
-        ? { on: saved.on !== false, auto: saved.auto !== false, hide: saved.hide, chipsCollapsed: saved.chipsCollapsed === true, dockWidth: saved.dockWidth }
+        ? { on: saved.on !== false, auto: saved.auto !== false, hide: saved.hide, chipsCollapsed: saved.chipsCollapsed === true, dockWidth: saved.dockWidth, launcherPos: saved.launcherPos }
         : defaults;
     } catch {
       return defaults;
@@ -165,21 +168,36 @@
 
   // Analyzes new posts on its own once they stop arriving. While the graph is open, it updates the badges and the
   // fold on the page but leaves the graph as it is; "Refresh graph" shows the newer analysis.
+  // The page reports its count several times a second (both sites keep mutating), so only a new count restarts the
+  // wait.
   function scheduleAuto() {
-    clearTimeout(state.autoTimer);
     const c = state.collected;
-    if (!clean.auto || state.busy || !c?.hasPost || !c.count) return;
-    if (c.count - (state.analyzedCount ?? 0) <= 0) return;
+    const due = clean.auto && !state.busy && c?.hasPost && c.count > (state.analyzedCount ?? 0);
+    if (!due) {
+      clearTimeout(state.autoTimer);
+      state.autoTimer = null;
+      state.autoCount = null;
+      return;
+    }
+    if (state.autoTimer && state.autoCount === c.count) return;
+    const now = Date.now();
+    if (!state.autoTimer) state.autoSince = now;
+    clearTimeout(state.autoTimer);
+    state.autoCount = c.count;
+    const wait = Math.max(0, Math.min(AUTO_DELAY_MS, state.autoSince + AUTO_MAX_WAIT_MS - now));
     state.autoTimer = setTimeout(() => {
+      state.autoTimer = null;
+      state.autoCount = null;
       state.autoRequested = true;
       toPage({ type: "requestConversation" });
-    }, AUTO_DELAY_MS);
+    }, wait);
   }
 
   async function analyze(conversation) {
     const auto = state.autoRequested;
     state.autoRequested = false;
     clearTimeout(state.autoTimer);
+    state.autoTimer = null;
     state.busy = true;
     showMessage(auto ? "Analyzing new posts…" : "");
     $("#analyze").disabled = true;
@@ -372,6 +390,10 @@
         clean.dockWidth = msg.width;
         saveClean();
       }
+      if (msg.type === "launcherPos") {
+        clean.launcherPos = msg.pos;
+        saveClean();
+      }
       if (msg.type === "reset") {
         state.appFrame?.remove();
         state.appFrame = null;
@@ -379,6 +401,7 @@
         state.analyzedCount = null;
         state.pendingGraph = null;
         clearTimeout(state.autoTimer);
+        state.autoTimer = null;
         renderClean();
         $("#placeholder").hidden = false;
         document.body.classList.remove("has-graph");
@@ -414,6 +437,7 @@
   $("#auto").onclick = () =>
     toPage({ type: "autoCollect", value: !state.collected?.collecting });
   $("#close").onclick = () => toPage({ type: "close" });
+  $("#minimize").onclick = () => toPage({ type: "close" });
   $("#expand").textContent = "Dock";
   $("#expand").onclick = () => {
     state.expanded = !state.expanded;
@@ -431,5 +455,5 @@
   });
   checkServer();
   setInterval(checkServer, 15000);
-  toPage({ type: "ready", dockWidth: clean.dockWidth ?? null });
+  toPage({ type: "ready", dockWidth: clean.dockWidth ?? null, launcherPos: clean.launcherPos ?? null });
 })();

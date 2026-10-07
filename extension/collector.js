@@ -203,7 +203,9 @@
   };
 
   const REDESIGNED_CARD = '[role="listitem"][componentkey^="update-card-focus"]';
-  const SOCIAL_CONTEXT = /(likes?|loves?|celebrates?|supports?|finds this|commented on|reposted|follows?) (this|that)?/i;
+  // "X likes this", "X reposted this", "X commented": a line about someone else's activity, above the author.
+  // "Follow" alone is the follow button, not context.
+  const SOCIAL_CONTEXT = /\b((likes?|loves?|celebrates?|supports?|finds|follows?) (this|that)|commented( on)?|replied( to)?|reposted|reacted( to)?)\b/i;
 
   /**
    * Reads the header above a redesigned card's text: the author is the first named profile link, after any
@@ -401,11 +403,17 @@
     badge.style.top = "8px";
   }
 
-  function placeOverlays(site) {
+  /** Re-measures floating badges whose card changed width; measuring every card on every page change stutters. */
+  function placeOverlays(site, force = false) {
     for (const badge of document.querySelectorAll(".dil-badge-overlay")) {
       const card = badge.closest("[data-dil-item]");
-      const target = card && site.badgeAnchor(card)?.overlay;
-      if (target) placeOverlay(badge, card, target);
+      if (!card) continue;
+      const width = String(Math.round(card.getBoundingClientRect().width));
+      if (!force && badge.dataset.dilWidth === width) continue;
+      const target = site.badgeAnchor(card)?.overlay;
+      if (!target) continue;
+      placeOverlay(badge, card, target);
+      badge.dataset.dilWidth = width;
     }
   }
 
@@ -439,6 +447,7 @@
         el.classList.add("dil-badge-host");
         el.appendChild(badge);
         placeOverlay(badge, el, anchor.overlay);
+        badge.dataset.dilWidth = String(Math.round(el.getBoundingClientRect().width));
       } else anchor.appendChild(badge);
       el.classList.add(`dil-tinted-${info.classification}`);
     }
@@ -449,12 +458,26 @@
    * folded post keeps its place, so the feed doesn't jump; clicking the note shows it again (onReveal(id)).
    * results: Map of item id -> { category, categoryLabel, ... }.
    */
+  /** The element that scrolls the feed: LinkedIn's redesign scrolls a container, X scrolls the window. */
+  function scrollerOf(el) {
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const y = getComputedStyle(p).overflowY;
+      if ((y === "auto" || y === "scroll") && p.scrollHeight > p.clientHeight) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
   function applyHiding(results, hidden, revealed, onReveal) {
     for (const el of document.querySelectorAll("[data-dil-item]")) {
       const id = el.dataset.dilItem;
       const info = results.get(id);
       const hide = Boolean(info && info.category && hidden.has(info.category) && !revealed.has(id));
       const stub = [...el.children].find((c) => c.classList.contains("dil-stub"));
+      if (hide === Boolean(stub)) continue;
+      // Folding or unfolding a post above the viewport would shift everything you're reading; scroll by the same
+      // amount so the feed stays put.
+      const before = el.getBoundingClientRect();
+      const above = before.bottom <= 0;
       if (hide && !stub) {
         const note = document.createElement("div");
         note.className = "dil-stub";
@@ -477,6 +500,7 @@
         stub.remove();
         el.classList.remove("dil-collapsed");
       }
+      if (above) scrollerOf(el).scrollTop += el.getBoundingClientRect().height - before.height;
     }
   }
 
@@ -501,7 +525,7 @@
     cancelAnimationFrame(reflow);
     reflow = requestAnimationFrame(() => {
       const site = detect();
-      if (site) placeOverlays(site);
+      if (site) placeOverlays(site, true);
     });
   });
 
